@@ -1,38 +1,72 @@
-.App {
-  text-align: center;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background: #fff; color: #1a1a1a; }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+/* 헤더 */
+.ks-header { padding: 14px 24px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; background: #fff; z-index: 100; }
+.ks-logo { font-size: 18px; font-weight: 600; cursor: pointer; color: #1a1a1a; }
+.ks-logo span { color: #1D9E75; }
+.ks-header-search { flex: 1; max-width: 560px; display: flex; border: 1px solid #d1d5db; border-radius: 10px; overflow: hidden; }
+.ks-header-search input { flex: 1; padding: 8px 14px; border: none; outline: none; font-size: 14px; }
+.ks-header-search button { background: #1D9E75; color: #fff; border: none; padding: 8px 20px; font-size: 14px; cursor: pointer; }
+.ks-header-search button:hover { background: #0F6E56; }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
+/* 홈 */
+.ks-home { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 24px; }
+.ks-home-logo { font-size: 42px; font-weight: 700; margin-bottom: 10px; }
+.ks-home-logo span { color: #1D9E75; }
+.ks-home-tagline { font-size: 16px; color: #6b7280; margin-bottom: 36px; }
+.ks-home-searchbox { width: 100%; max-width: 600px; display: flex; border: 1.5px solid #d1d5db; border-radius: 12px; overflow: hidden; margin-bottom: 18px; }
+.ks-home-searchbox input { flex: 1; padding: 14px 18px; border: none; outline: none; font-size: 16px; }
+.ks-home-searchbox button { background: #1D9E75; color: #fff; border: none; padding: 14px 28px; font-size: 15px; cursor: pointer; font-weight: 600; }
+.ks-home-searchbox button:hover { background: #0F6E56; }
+.ks-badges { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+.ks-badge { font-size: 12px; padding: 5px 12px; border-radius: 20px; background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+.ks-badge-green { background: #E1F5EE; color: #0F6E56; border-color: #5DCAA5; }
+.ks-footer-text { font-size: 12px; color: #9ca3af; }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+/* 검색 결과 */
+.ks-results { padding: 24px; max-width: 860px; margin: 0 auto; }
+.ks-results-meta { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
+.ks-results-meta strong { color: #1a1a1a; }
+.ks-filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.ks-chip { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer; }
+.ks-chip:hover { border-color: #1D9E75; color: #1D9E75; }
+.ks-chip.active { background: #E1F5EE; color: #0F6E56; border-color: #5DCAA5; font-weight: 600; }
 
-.App-link {
-  color: #61dafb;
-}
+/* 논문 카드 */
+.ks-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.ks-card:hover { border-color: #1D9E75; box-shadow: 0 2px 8px rgba(29,158,117,0.08); }
+.ks-card-title { font-size: 15px; font-weight: 600; line-height: 1.5; margin-bottom: 6px; color: #1a1a1a; }
+.ks-card:hover .ks-card-title { color: #1D9E75; }
+.ks-card-meta { font-size: 12px; color: #9ca3af; margin-bottom: 12px; line-height: 1.6; }
+.ks-card-footer { display: flex; align-items: center; justify-content: space-between; }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* 태그 */
+.ks-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.ks-tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+.ks-tag-green { background: #E1F5EE; color: #0F6E56; }
+.ks-tag-blue { background: #E6F1FB; color: #185FA5; }
+
+/* PDF 버튼 */
+.ks-pdf-btn { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #1D9E75; color: #1D9E75; background: transparent; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.ks-pdf-btn:hover { background: #E1F5EE; }
+
+/* 상세 페이지 */
+.ks-detail { padding: 28px 24px; max-width: 860px; margin: 0 auto; }
+.ks-back-btn { font-size: 13px; color: #6b7280; cursor: pointer; background: none; border: none; margin-bottom: 20px; padding: 0; }
+.ks-back-btn:hover { color: #1D9E75; }
+.ks-detail-title { font-size: 24px; font-weight: 700; line-height: 1.45; margin-bottom: 12px; }
+.ks-detail-authors { font-size: 14px; color: #1D9E75; margin-bottom: 4px; font-weight: 500; }
+.ks-detail-journal { font-size: 13px; color: #9ca3af; margin-bottom: 24px; }
+.ks-detail-cta { display: flex; gap: 10px; margin-bottom: 28px; }
+.ks-cta-primary { background: #1D9E75; color: #fff; border: none; border-radius: 10px; padding: 11px 24px; font-size: 14px; cursor: pointer; font-weight: 600; }
+.ks-cta-primary:hover { background: #0F6E56; }
+.ks-cta-secondary { background: transparent; color: #6b7280; border: 1px solid #e5e7eb; border-radius: 10px; padding: 11px 24px; font-size: 14px; cursor: pointer; }
+.ks-cta-secondary:hover { border-color: #9ca3af; color: #1a1a1a; }
+.ks-divider { border: none; border-top: 1px solid #f3f4f6; margin: 0 0 20px; }
+.ks-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; margin-bottom: 10px; font-weight: 600; }
+.ks-abstract { font-size: 14px; line-height: 1.8; color: #4b5563; margin-bottom: 24px; }
+.ks-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ks-meta-item { background: #f9fafb; border-radius: 10px; padding: 14px 16px; }
+.ks-meta-label { font-size: 11px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+.ks-meta-value { font-size: 14px; font-weight: 600; color: #1a1a1a; }
