@@ -70,3 +70,7 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background: #fff; 
 .ks-meta-item { background: #f9fafb; border-radius: 10px; padding: 14px 16px; }
 .ks-meta-label { font-size: 11px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
 .ks-meta-value { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.ks-pdf-oa { border-color: #1D9E75; color: #1D9E75; }
+.ks-pdf-oa:hover { background: #E1F5EE; }
+.ks-pdf-google { border-color: #9ca3af; color: #6b7280; }
+.ks-pdf-google:hover { background: #f3f4f6; }

@@ -92,7 +92,10 @@ function ResultsPage({ query, onPaperClick, onSearch }) {
                       {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
                       {p.language==='ko' && <span className="ks-tag ks-tag-blue">한국어</span>}
                     </div>
-                    <button className="ks-pdf-btn" onClick={e=>{e.stopPropagation();window.open(pdfUrl,'_blank');}}>원문 PDF 보기 ↗</button>
+                    {isOA && pdfUrl !== '#'
+                      ? <button className="ks-pdf-btn ks-pdf-oa" onClick={e=>{e.stopPropagation();window.open(pdfUrl,'_blank');}}>무료 PDF 바로 보기 ↗</button>
+                      : <button className="ks-pdf-btn ks-pdf-google" onClick={e=>{e.stopPropagation();window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`,'_blank');}}>구글에서 원문 찾기 ↗</button>
+                    }
                   </div>
                 </div>
               );
