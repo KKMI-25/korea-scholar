@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import './App.css';
 
-const DUMMY_PAPERS = [
-  { id:1, title:'경량 RFID 상호 인증 프로토콜의 설계 및 보안 분석', authors:'박재규, 이민호, 김수진', journal:'정보보호학회논문지', year:2022, doi:'10.13722/JKIICE.2022.26.4.512', oa:true, kci:'등재', abstract:'본 논문에서는 RFID 시스템에서의 저전력 상호 인증 프로토콜을 제안한다. 기존 프로토콜의 취약점을 분석하고, 해시 함수와 난수 생성기를 기반으로 하는 경량화된 인증 메커니즘을 설계하였다.', citations:14, lang:'한국어', pdfUrl:'https://www.kci.go.kr' },
-  { id:2, title:'IoT 환경에서의 RFID 기반 저전력 인증 체계 연구', authors:'홍길동, 최영철', journal:'Journal of Information Security', year:2023, doi:'10.3745/JIPS.04.0261', oa:false, kci:'등재후보', abstract:'IoT 환경에서 자원 제약적인 디바이스를 위한 경량 인증 프로토콜을 설계하고 보안성을 분석한다.', citations:7, lang:'한국어', pdfUrl:'https://www.kci.go.kr' },
-  { id:3, title:'Secure and Efficient RFID Authentication Protocol Using Elliptic Curve Cryptography', authors:'Kim J., Lee S., Park Y.', journal:'IEEE Access', year:2021, doi:'10.1109/ACCESS.2021.3098731', oa:true, kci:null, abstract:'We propose a lightweight RFID authentication protocol based on elliptic curve cryptography suitable for resource-constrained environments.', citations:32, lang:'영어', pdfUrl:'https://ieeexplore.ieee.org' },
-  { id:4, title:'블록체인 기반 RFID 태그 인증 시스템의 프라이버시 보호 방안', authors:'이상호, 정민지', journal:'한국통신학회논문지', year:2023, doi:'10.7840/kics.2023.48.3.401', oa:false, kci:'등재', abstract:'블록체인 기술을 활용하여 RFID 태그의 프라이버시를 보호하는 새로운 인증 시스템을 제안한다.', citations:5, lang:'한국어', pdfUrl:'https://www.kci.go.kr' },
-];
-
 function Header({ query, onSearch, onLogoClick }) {
   const [val, setVal] = useState(query);
   return (
@@ -42,70 +35,112 @@ function HomePage({ onSearch }) {
 }
 
 function ResultsPage({ query, onPaperClick, onSearch }) {
+  const [papers, setPapers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState('전체');
-  const filters = ['전체','오픈액세스','KCI등재','한국어','영어'];
-  const filtered = DUMMY_PAPERS.filter(p => {
-    if (filter==='오픈액세스') return p.oa;
-    if (filter==='KCI등재') return p.kci==='등재';
-    if (filter==='한국어') return p.lang==='한국어';
-    if (filter==='영어') return p.lang==='영어';
+  const filters = ['전체','오픈액세스','한국어'];
+
+  useState(() => {
+    if (!query) return;
+    setLoading(true);
+    fetch(`https://api.openalex.org/works?search=${encodeURIComponent(query)}&per_page=20&mailto=kkmi.hello@gmail.com`)
+      .then(r=>r.json())
+      .then(data=>{
+        setPapers(data.results||[]);
+        setTotal(data.meta?.count||0);
+        setLoading(false);
+      })
+      .catch(()=>setLoading(false));
+  }, [query]);
+
+  const filtered = papers.filter(p => {
+    if (filter==='오픈액세스') return p.open_access?.is_oa;
+    if (filter==='한국어') return p.language==='ko';
     return true;
   });
+
   return (
     <div>
       <Header query={query} onSearch={onSearch} onLogoClick={()=>onSearch('')} />
       <div className="ks-results">
-        <div className="ks-results-meta"><strong>{filtered.length}건</strong> 검색됨 — "{query}"</div>
-        <div className="ks-filter-row">
-          {filters.map(f=>(
-            <span key={f} className={`ks-chip${filter===f?' active':''}`} onClick={()=>setFilter(f)}>{f}</span>
-          ))}
-        </div>
-        {filtered.map(p=>(
-          <div key={p.id} className="ks-card" onClick={()=>onPaperClick(p)}>
-            <div className="ks-card-title">{p.title}</div>
-            <div className="ks-card-meta">{p.authors} · {p.journal} · {p.year} · DOI: {p.doi}</div>
-            <div className="ks-card-footer">
-              <div className="ks-tags">
-                {p.oa && <span className="ks-tag ks-tag-green">오픈액세스</span>}
-                {p.kci && <span className="ks-tag ks-tag-blue">KCI {p.kci}</span>}
-              </div>
-              <button className="ks-pdf-btn" onClick={e=>{e.stopPropagation();window.open(p.pdfUrl,'_blank');}}>원문 PDF 보기 ↗</button>
+        {loading ? (
+          <div className="ks-loading">검색 중...</div>
+        ) : (
+          <>
+            <div className="ks-results-meta"><strong>{total.toLocaleString()}건</strong> 검색됨 — "{query}"</div>
+            <div className="ks-filter-row">
+              {filters.map(f=>(
+                <span key={f} className={`ks-chip${filter===f?' active':''}`} onClick={()=>setFilter(f)}>{f}</span>
+              ))}
             </div>
-          </div>
-        ))}
+            {filtered.length===0 && <div className="ks-empty">검색 결과가 없습니다.</div>}
+            {filtered.map(p=>{
+              const title = p.title || '(제목 없음)';
+              const authors = p.authorships?.slice(0,3).map(a=>a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
+              const journal = p.primary_location?.source?.display_name || '';
+              const year = p.publication_year || '';
+              const doi = p.doi?.replace('https://doi.org/','') || '';
+              const isOA = p.open_access?.is_oa;
+              const pdfUrl = p.open_access?.oa_url || p.doi || '#';
+              return (
+                <div key={p.id} className="ks-card" onClick={()=>onPaperClick(p)}>
+                  <div className="ks-card-title">{title}</div>
+                  <div className="ks-card-meta">{authors}{journal&&` · ${journal}`}{year&&` · ${year}`}{doi&&` · DOI: ${doi}`}</div>
+                  <div className="ks-card-footer">
+                    <div className="ks-tags">
+                      {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
+                      {p.language==='ko' && <span className="ks-tag ks-tag-blue">한국어</span>}
+                    </div>
+                    <button className="ks-pdf-btn" onClick={e=>{e.stopPropagation();window.open(pdfUrl,'_blank');}}>원문 PDF 보기 ↗</button>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 function DetailPage({ paper, onBack, onSearch }) {
+  const title = paper.title || '(제목 없음)';
+  const authors = paper.authorships?.map(a=>a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
+  const journal = paper.primary_location?.source?.display_name || '';
+  const year = paper.publication_year || '';
+  const doi = paper.doi?.replace('https://doi.org/','') || '';
+  const isOA = paper.open_access?.is_oa;
+  const pdfUrl = paper.open_access?.oa_url || paper.doi || '#';
+  const abstract = paper.abstract_inverted_index ? '초록 정보가 있습니다. 원문을 확인하세요.' : '초록 정보가 없습니다.';
+  const citations = paper.cited_by_count || 0;
+
   return (
     <div>
-      <Header query={paper.title} onSearch={onSearch} onLogoClick={()=>onSearch('')} />
+      <Header query={title} onSearch={onSearch} onLogoClick={()=>onSearch('')} />
       <div className="ks-detail">
         <button className="ks-back-btn" onClick={onBack}>← 검색 결과로 돌아가기</button>
         <div className="ks-tags" style={{marginBottom:14}}>
-          {paper.oa && <span className="ks-tag ks-tag-green">오픈액세스</span>}
-          {paper.kci && <span className="ks-tag ks-tag-blue">KCI {paper.kci}</span>}
+          {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
+          {paper.language==='ko' && <span className="ks-tag ks-tag-blue">한국어</span>}
         </div>
-        <h1 className="ks-detail-title">{paper.title}</h1>
-        <div className="ks-detail-authors">{paper.authors}</div>
-        <div className="ks-detail-journal">{paper.journal} · {paper.year}</div>
+        <h1 className="ks-detail-title">{title}</h1>
+        <div className="ks-detail-authors">{authors}</div>
+        <div className="ks-detail-journal">{journal}{year&&` · ${year}`}</div>
         <div className="ks-detail-cta">
-          <button className="ks-cta-primary" onClick={()=>window.open(paper.pdfUrl,'_blank')}>원문 PDF 보기 ↗</button>
-          <button className="ks-cta-secondary" onClick={()=>{navigator.clipboard.writeText(paper.doi);alert('DOI가 복사되었습니다.');}}>DOI 복사</button>
+          <button className="ks-cta-primary" onClick={()=>window.open(pdfUrl,'_blank')}>원문 PDF 보기 ↗</button>
+          <button className="ks-cta-secondary" onClick={()=>{navigator.clipboard.writeText(doi);alert('DOI가 복사되었습니다.');}}>DOI 복사</button>
         </div>
         <hr className="ks-divider"/>
         <div className="ks-section-label">초록</div>
-        <div className="ks-abstract">{paper.abstract}</div>
+        <div className="ks-abstract">{abstract}</div>
         <hr className="ks-divider"/>
         <div className="ks-section-label">서지 정보</div>
         <div className="ks-meta-grid">
-          <div className="ks-meta-item"><div className="ks-meta-label">DOI</div><div className="ks-meta-value" style={{fontSize:12}}>{paper.doi}</div></div>
-          <div className="ks-meta-item"><div className="ks-meta-label">피인용 수</div><div className="ks-meta-value">{paper.citations}회</div></div>
-          <div className="ks-meta-item"><div className="ks-meta-label">언어</div><div className="ks-meta-value">{paper.lang}</div></div>
-          <div className="ks-meta-item"><div className="ks-meta-label">출처</div><div className="ks-meta-value">{paper.kci ? 'KCI + OpenAlex' : 'OpenAlex'}</div></div>
+          <div className="ks-meta-item"><div className="ks-meta-label">DOI</div><div className="ks-meta-value" style={{fontSize:12}}>{doi||'-'}</div></div>
+          <div className="ks-meta-item"><div className="ks-meta-label">피인용 수</div><div className="ks-meta-value">{citations.toLocaleString()}회</div></div>
+          <div className="ks-meta-item"><div className="ks-meta-label">언어</div><div className="ks-meta-value">{paper.language==='ko'?'한국어':'영어'}</div></div>
+          <div className="ks-meta-item"><div className="ks-meta-label">출처</div><div className="ks-meta-value">OpenAlex</div></div>
         </div>
       </div>
     </div>
