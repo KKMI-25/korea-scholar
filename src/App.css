@@ -74,3 +74,354 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background: #fff; 
 .ks-pdf-oa:hover { background: #E1F5EE; }
 .ks-pdf-google { border-color: #9ca3af; color: #6b7280; }
 .ks-pdf-google:hover { background: #f3f4f6; }
+/* ===== 네비게이션 ===== */
+.ks-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding: 12px 24px;
+  z-index: 100;
+}
+.ks-home-nav {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+}
+.ks-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ks-nav-btn {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #333;
+}
+.ks-nav-btn:hover { background: #f5f5f5; }
+.ks-nav-user {
+  font-size: 13px;
+  color: #555;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 북마크 버튼 ===== */
+.ks-btn-bookmark {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #888;
+  white-space: nowrap;
+}
+.ks-btn-bookmark:hover { border-color: #f5a623; color: #f5a623; }
+.ks-btn-bookmark.active { border-color: #f5a623; color: #f5a623; background: #fff8ee; }
+.ks-btn-bookmark-lg {
+  background: none;
+  border: 2px solid #f5a623;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #f5a623;
+  font-weight: 600;
+}
+.ks-btn-bookmark-lg.active { background: #fff8ee; }
+
+/* ===== 로그인 모달 ===== */
+.ks-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.ks-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 360px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ks-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999;
+}
+.ks-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+.ks-btn-google {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 500;
+}
+.ks-btn-google:hover { background: #f8f8f8; }
+.ks-divider {
+  text-align: center;
+  color: #aaa;
+  font-size: 13px;
+  position: relative;
+}
+.ks-modal-input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ks-modal-input:focus { border-color: #4a90d9; }
+.ks-btn-submit {
+  background: #1a3a5c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.ks-btn-submit:hover { background: #2a5298; }
+.ks-error { color: #e53e3e; font-size: 13px; margin: 0; }
+.ks-switch {
+  text-align: center;
+  color: #4a90d9;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 0;
+}
+.ks-switch:hover { text-decoration: underline; }
+
+/* ===== 상세 페이지 액션 ===== */
+.ks-detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.ks-pdf-btn-lg {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+.ks-pdf-btn-lg.ks-pdf-oa { background: #1D9E75; color: #fff; }
+.ks-pdf-btn-lg.ks-pdf-oa:hover { background: #17815f; }
+.ks-pdf-btn-lg.ks-pdf-google { background: #f3f4f6; color: #333; border: 1px solid #ddd; }
+.ks-pdf-btn-lg.ks-pdf-google:hover { background: #e5e7eb; }
+
+/* ===== 홈 페이지 스타일 복원 ===== */
+.ks-app {
+  min-height: 100vh;
+  background: #f7f9fc;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+}
+.ks-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #0d1b2e 0%, #1a2744 40%, #0f2038 70%, #101828 100%);
+}
+.ks-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 640px;
+  padding: 0 24px;
+}
+.ks-logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ks-logo-icon {
+  font-size: 56px;
+}
+.ks-title {
+  font-size: 48px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -1px;
+}
+.ks-subtitle {
+  font-size: 17px;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+}
+.ks-search-box {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ks-input {
+  flex: 1;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  outline: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.ks-btn-search {
+  padding: 16px 28px;
+  background: #f5a623;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ks-btn-search:hover { background: #e09515; }
+.ks-hint {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+}
+/* 홈 네비 버튼 흰색으로 */
+.ks-home .ks-home-nav .ks-nav-btn,
+.ks-home-nav .ks-nav-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+}
+.ks-home-nav .ks-nav-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+.ks-home-nav .ks-nav-user {
+  color: rgba(255,255,255,0.85);
+}
+/* ===== 홈 네비 수정 ===== */
+.ks-home-nav-area {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+}
+.ks-home-nav-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.ks-home-nav-btn:hover { background: rgba(255,255,255,0.28); }
+.ks-home-nav-user {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 헤더 (검색결과/상세) ===== */
+.ks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e8edf2;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.ks-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ks-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ks-home-logo-small {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1a3a5c;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ks-home-logo-small span { color: #1D9E75; }
+.ks-header-search {
+  width: 400px !important;
+}
+.ks-header-search input {
+  height: 36px !important;
+  padding: 0 14px !important;
+  font-size: 14px !important;
+}
+.ks-header-search button {
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+}
+
+/* ===== 홈 로고 수정 ===== */
+.ks-home-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 48px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.ks-home-logo span:first-child { font-size: 52px; }
+.ks-home-logo-text { color: #FFFFFF; }
+.ks-home-logo-text span { color: #affbd6; }
+.ks-home-tagline {
+  color: rgba(255,255,255,0.75);
+  font-size: 16px;
+  margin-bottom: 28px;
+}
