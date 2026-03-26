@@ -4,6 +4,13 @@ import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCrede
 import { collection, addDoc, deleteDoc, doc, getDocs, query, where, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import './App.css';
 
+// ==================== 언어 자동 감지 ====================
+function detectLanguage() {
+  const lang = (navigator.language || navigator.userLanguage || 'en').split('-')[0].toLowerCase();
+  return ['ko','en','zh','ja','de','fr','es','pt','ar'].includes(lang) ? lang : 'en';
+}
+
+
 // ==================== 참고문헌 생성 ====================
 function generateCitation(paper, format) {
   const authors = paper.authorships?.map(a => a.author?.display_name).filter(Boolean) || [];
@@ -162,38 +169,72 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
 }
 
 // ==================== 홈 ====================
-function HomePage({ onSearch, user, onShowAuth }) {
+function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
   const [query, setQuery] = useState('');
+  const t = i18n[siteLang] || i18n.en;
+  const isRTL = siteLang === 'ar';
   return (
-    <div className="ks-home">
+    <div className="ks-home" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="ks-home-nav-area">
+        {/* 언어 드롭다운 */}
+        <div style={{position:'relative', display:'inline-block'}}>
+          <button
+            onClick={() => document.getElementById('lang-dropdown').classList.toggle('ks-lang-open')}
+            style={{background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.25)',
+              borderRadius:'8px', padding:'6px 14px', color:'#fff', cursor:'pointer',
+              fontSize:'14px', display:'flex', alignItems:'center', gap:'6px'}}>
+            {{'ko':'🇰🇷','en':'🇺🇸','zh':'🇨🇳','ja':'🇯🇵','de':'🇩🇪',
+              'fr':'🇫🇷','es':'🇪🇸','pt':'🇧🇷','ar':'🇸🇦'}[siteLang]} {LANGUAGES[siteLang]} ▾
+          </button>
+          <div id="lang-dropdown"
+            style={{display:'none', position:'absolute', right:0, top:'40px',
+              background:'#1a2744', border:'1px solid rgba(255,255,255,0.15)',
+              borderRadius:'10px', overflow:'hidden', zIndex:200, minWidth:'160px',
+              boxShadow:'0 8px 24px rgba(0,0,0,0.4)'}}>
+            {Object.entries(LANGUAGES).map(([code, label]) => (
+              <button key={code}
+                onClick={() => { onLangChange(code); document.getElementById('lang-dropdown').classList.remove('ks-lang-open'); }}
+                style={{display:'flex', alignItems:'center', gap:'10px', width:'100%',
+                  padding:'10px 16px', border:'none', cursor:'pointer', fontSize:'13px',
+                  background: siteLang===code ? 'rgba(61,214,140,0.15)' : 'transparent',
+                  color: siteLang===code ? '#3DD68C' : 'rgba(255,255,255,0.8)',
+                  fontWeight: siteLang===code ? '700' : '400', textAlign:'left'}}>
+                <span style={{fontSize:'18px'}}>
+                  {{'ko':'🇰🇷','en':'🇺🇸','zh':'🇨🇳','ja':'🇯🇵','de':'🇩🇪',
+                    'fr':'🇫🇷','es':'🇪🇸','pt':'🇧🇷','ar':'🇸🇦'}[code]}
+                </span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {user ? (
           <>
-            <button className="ks-home-nav-btn" onClick={() => onSearch('__library__')}>📖 내 서재</button>
+            <button className="ks-home-nav-btn" onClick={() => onSearch('__library__')}>{t.myLibrary}</button>
             <button className="ks-home-nav-btn" onClick={() => onSearch('__mypage__')}>{user.displayName || user.email?.split('@')[0]}</button>
-            <button className="ks-home-nav-btn" onClick={() => { logOut(); }}>로그아웃</button>
+            <button className="ks-home-nav-btn" onClick={logOut}>{t.logout}</button>
           </>
         ) : (
-          <button className="ks-home-nav-btn" onClick={onShowAuth}>로그인 / 회원가입</button>
+          <button className="ks-home-nav-btn" onClick={onShowAuth}>{t.login} / {t.signup}</button>
         )}
       </div>
       <div className="ks-home-logo">
         <span>📚</span>
         <span className="ks-home-logo-text">Korea <span>Scholar</span></span>
       </div>
-      <p className="ks-home-tagline">전 세계 학술 논문을 무료로 검색하세요</p>
+      <p className="ks-home-tagline">{t.tagline}</p>
       <div className="ks-home-searchbox">
-        <input type="text" placeholder="논문 제목, 저자, 키워드 검색..." value={query}
+        <input type="text" placeholder={t.searchPlaceholder} value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && query.trim() && onSearch(query.trim())} />
-        <button onClick={() => query.trim() && onSearch(query.trim())}>검색</button>
+        <button onClick={() => query.trim() && onSearch(query.trim())}>{t.search}</button>
       </div>
       <div className="ks-badges">
         <span className="ks-badge ks-badge-green">OpenAlex</span>
-        <span className="ks-badge">무료 오픈액세스</span>
-        <span className="ks-badge">전세계 논문</span>
+        <span className="ks-badge">{siteLang === 'ko' ? '무료 오픈액세스' : 'Free Open Access'}</span>
+        <span className="ks-badge">{siteLang === 'ko' ? '전세계 논문' : 'Global Papers'}</span>
       </div>
-       <div style={{position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
+      <div style={{position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
         fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', whiteSpace:'nowrap'}}>
         Copyright ⓒ 2025{' '}
         <a href="https://www.kkmii.com/" target="_blank" rel="noreferrer"
@@ -742,6 +783,7 @@ function LibraryPage({ user, bookmarks, onPaperClick, onSearch, onShowAuth, onRe
 // ==================== 메인 앱 ====================
 export default function App() {
   const [page, setPage] = useState('home');
+  const [siteLang, setSiteLang] = useState(detectLanguage());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [user, setUser] = useState(null);
@@ -787,7 +829,7 @@ export default function App() {
     setSearchQuery(q); setPage('results');
   };
 
-  const commonProps = { user, onSearch: handleSearch, onShowAuth: () => setShowAuth(true) };
+  const commonProps = { user, onSearch: handleSearch, onShowAuth: () => setShowAuth(true), siteLang, onLangChange: setSiteLang };
 
   return (
     <div>
