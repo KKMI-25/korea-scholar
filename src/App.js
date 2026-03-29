@@ -100,6 +100,125 @@ async function searchOpenAlex(keyword, page = 1) {
   return await res.json();
 }
 
+// ==================== KCI 검색 ====================
+const KCI_API_KEY = '94351029';
+const KCI_BASE = 'https://open.kci.go.kr/po/openapi/openApiSearch.kci';
+
+async function searchKCI(keyword, page = 1) {
+  try {
+    const url = `${KCI_BASE}?apiCode=articleSearch&key=${KCI_API_KEY}&title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+
+    const total = parseInt(xml.querySelector('total')?.textContent || '0', 10);
+    const records = xml.querySelectorAll('record');
+    const results = [];
+
+    records.forEach(record => {
+      const journalInfo = record.querySelector('journalInfo');
+      const articleInfo = record.querySelector('articleInfo');
+      if (!articleInfo) return;
+
+      const articleId = articleInfo.getAttribute('article-id') || '';
+      const titleOriginal = articleInfo.querySelector('article-title[lang="original"]')?.textContent || '';
+      const titleEnglish = articleInfo.querySelector('article-title[lang="english"]')?.textContent || '';
+      const categories = articleInfo.querySelector('article-categories')?.textContent || '';
+      const fpage = articleInfo.querySelector('fpage')?.textContent || '';
+      const lpage = articleInfo.querySelector('lpage')?.textContent || '';
+      const orteOpenYn = articleInfo.querySelector('orte-open-yn')?.textContent || 'N';
+      const doi = articleInfo.querySelector('doi')?.textContent || '';
+      const uci = articleInfo.querySelector('uci')?.textContent || '';
+      const citationCount = articleInfo.querySelector('citation-count');
+      const kciCited = citationCount?.getAttribute('kci') || '0';
+      const wosCited = citationCount?.getAttribute('wos') || '0';
+      const paperUrl = articleInfo.querySelector('url')?.textContent || '';
+
+      // 저자 파싱
+      const authorNodes = articleInfo.querySelectorAll('author-group author');
+      const authors = [];
+      authorNodes.forEach(a => {
+        const nameText = a.textContent?.trim() || '';
+        const engName = a.getAttribute('english') || '';
+        const orcId = a.getAttribute('orc-id') || '';
+        authors.push({ display_name: nameText.split('(')[0].trim(), english: engName, orcId, raw: nameText });
+      });
+
+      // 초록 파싱
+      const abstractOriginal = articleInfo.querySelector('abstract[lang="original"]')?.textContent || '';
+      const abstractEnglish = articleInfo.querySelector('abstract[lang="english"]')?.textContent || '';
+
+      // OpenAlex 호환 포맷으로 변환
+      results.push({
+        id: `kci-${articleId}`,
+        title: titleOriginal || titleEnglish || '(제목 없음)',
+        title_english: titleEnglish,
+        publication_year: journalInfo?.querySelector('pub-year')?.textContent || '',
+        language: 'ko',
+        open_access: { is_oa: orteOpenYn === 'Y' },
+        doi: doi || null,
+        cited_by_count: parseInt(kciCited, 10) || 0,
+        wos_cited: parseInt(wosCited, 10) || 0,
+        authorships: authors.map(a => ({ author: { display_name: a.display_name } })),
+        primary_location: {
+          source: {
+            display_name: journalInfo?.querySelector('journal-name')?.textContent || '',
+            publisher: journalInfo?.querySelector('publisher-name')?.textContent || '',
+          }
+        },
+        biblio: {
+          volume: journalInfo?.querySelector('volume')?.textContent || '',
+          issue: journalInfo?.querySelector('issue')?.textContent || '',
+          first_page: fpage,
+          last_page: lpage,
+        },
+        abstract_inverted_index: null,
+        _abstract_text: abstractOriginal || abstractEnglish || '',
+        _kci: {
+          articleId, categories, uci, paperUrl,
+          foreignListed: journalInfo?.querySelector('foreign-listed name')?.textContent || '',
+          pubMon: journalInfo?.querySelector('pub-mon')?.textContent || '',
+        },
+        _source: 'kci',
+      });
+    });
+
+    return { results, total };
+  } catch (err) {
+    console.warn('KCI API 호출 실패:', err);
+    return { results: [], total: 0 };
+  }
+}
+
+// ==================== 통합 검색 ====================
+async function searchAll(keyword, page = 1) {
+  const [oaData, kciData] = await Promise.allSettled([
+    searchOpenAlex(keyword, page),
+    searchKCI(keyword, page),
+  ]);
+
+  const oaResults = oaData.status === 'fulfilled' ? (oaData.value.results || []).map(r => ({ ...r, _source: 'openalex' })) : [];
+  const kciResults = kciData.status === 'fulfilled' ? kciData.value.results : [];
+  const oaTotal = oaData.status === 'fulfilled' ? (oaData.value.meta?.count || 0) : 0;
+  const kciTotal = kciData.status === 'fulfilled' ? kciData.value.total : 0;
+
+  // KCI 결과를 앞에, OpenAlex 결과를 뒤에 (한국 논문 우선)
+  // 중복 제거: DOI가 같은 경우 KCI 우선
+  const seen = new Set();
+  const merged = [];
+  [...kciResults, ...oaResults].forEach(paper => {
+    const doi = paper.doi?.replace('https://doi.org/', '').toLowerCase();
+    const key = doi || paper.id;
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(paper);
+    }
+  });
+
+  return { results: merged, oaTotal, kciTotal, totalCombined: oaTotal + kciTotal };
+}
+
 // ==================== 헤더 ====================
 function Header({ user, onSearch, onShowAuth, lastQuery }) {
   const [searchInput, setSearchInput] = useState(lastQuery || '');
@@ -138,7 +257,8 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
   const year = paper.publication_year || '';
   const doi = paper.doi?.replace('https://doi.org/', '') || '';
   const isOA = paper.open_access?.is_oa;
-  const pdfUrl = paper.open_access?.oa_url || paper.doi || '#';
+  const isKCI = paper._source === 'kci';
+  const pdfUrl = isKCI ? (paper._kci?.paperUrl || paper.doi || '#') : (paper.open_access?.oa_url || paper.doi || '#');
   const isBookmarked = bookmarks.some(b => b.paperId === paper.id);
 
   return (
@@ -147,8 +267,10 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
       <div className="ks-card-meta">{authors}{journal&&` · ${journal}`}{year&&` · ${year}`}{doi&&` · DOI: ${doi}`}</div>
       <div className="ks-card-footer">
         <div className="ks-tags">
+          {isKCI && <span className="ks-tag ks-tag-kci">KCI</span>}
           {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
           {paper.language==='ko' && <span className="ks-tag ks-tag-blue">한국어</span>}
+          {!isKCI && <span className="ks-tag" style={{background:'#f3f0ff', color:'#6d28d9'}}>OpenAlex</span>}
         </div>
         <div style={{display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'flex-end'}}>
           <CitationButton paper={paper} />
@@ -157,7 +279,9 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
             onClick={e => { e.stopPropagation(); user ? onBookmark(paper) : onShowAuth(); }}>
             {isBookmarked ? '★ 저장됨' : '☆ 저장'}
           </button>
-          {isOA && pdfUrl !== '#' ? (
+          {isKCI ? (
+            <button className="ks-pdf-btn ks-pdf-kci" onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>📄 KCI 원문 ↗</button>
+          ) : isOA && pdfUrl !== '#' ? (
             <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(pdfUrl, '_blank'); }}>무료 PDF ↗</button>
           ) : (
             <button className="ks-pdf-btn ks-pdf-google" onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank'); }}>구글 원문 ↗</button>
@@ -231,6 +355,7 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
       </div>
       <div className="ks-badges">
         <span className="ks-badge ks-badge-green">OpenAlex</span>
+        <span className="ks-badge" style={{background:'#E6F1FB', color:'#185FA5', borderColor:'#93C5FD'}}>KCI 연동</span>
         <span className="ks-badge">{siteLang === 'ko' ? '무료 오픈액세스' : 'Free Open Access'}</span>
         <span className="ks-badge">{siteLang === 'ko' ? '전세계 논문' : 'Global Papers'}</span>
       </div>
@@ -252,32 +377,73 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [oaTotal, setOaTotal] = useState(0);
+  const [kciTotal, setKciTotal] = useState(0);
+  const [sourceFilter, setSourceFilter] = useState('all'); // 'all', 'kci', 'openalex', 'oa'
 
   useEffect(() => {
     setLoading(true); setPage(1);
-    searchOpenAlex(query, 1).then(data => { setResults(data.results||[]); setTotal(data.meta?.count||0); setLoading(false); });
+    searchAll(query, 1).then(data => {
+      setResults(data.results || []);
+      setOaTotal(data.oaTotal || 0);
+      setKciTotal(data.kciTotal || 0);
+      setLoading(false);
+    });
   }, [query]);
 
   const loadPage = (p) => {
     setLoading(true); setPage(p);
-    searchOpenAlex(query, p).then(data => { setResults(data.results||[]); setLoading(false); window.scrollTo(0,0); });
+    searchAll(query, p).then(data => {
+      setResults(data.results || []);
+      setLoading(false);
+      window.scrollTo(0, 0);
+    });
   };
+
+  const filtered = results.filter(p => {
+    if (!p.title) return false;
+    if (sourceFilter === 'kci') return p._source === 'kci';
+    if (sourceFilter === 'openalex') return p._source === 'openalex';
+    if (sourceFilter === 'oa') return p.open_access?.is_oa;
+    return true;
+  });
+
+  const totalDisplay = oaTotal + kciTotal;
 
   return (
     <div>
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} lastQuery={query} />
-      {loading ? <div className="ks-loading">🔍 논문을 검색하는 중...</div> : (
+      {loading ? <div className="ks-loading">🔍 OpenAlex + KCI 통합 검색 중...</div> : (
         <div className="ks-results">
-          <div className="ks-results-meta">약 <strong>{total.toLocaleString()}</strong>건 검색됨</div>
-          {results.filter(p => p.title).map(p => (
+          <div className="ks-results-meta">
+            약 <strong>{totalDisplay.toLocaleString()}</strong>건 검색됨
+            {kciTotal > 0 && <span style={{marginLeft:'8px', fontSize:'12px', color:'#1D9E75'}}>(KCI {kciTotal.toLocaleString()}건)</span>}
+            {oaTotal > 0 && <span style={{marginLeft:'4px', fontSize:'12px', color:'#6d28d9'}}>(OpenAlex {oaTotal.toLocaleString()}건)</span>}
+          </div>
+          <div className="ks-filter-row">
+            {[
+              { key: 'all', label: `전체 (${filtered.length})` },
+              { key: 'kci', label: `KCI (${results.filter(p => p._source === 'kci').length})` },
+              { key: 'openalex', label: `OpenAlex (${results.filter(p => p._source === 'openalex').length})` },
+              { key: 'oa', label: `오픈액세스 (${results.filter(p => p.open_access?.is_oa).length})` },
+            ].map(f => (
+              <button key={f.key} className={`ks-chip ${sourceFilter === f.key ? 'active' : ''}`}
+                onClick={() => setSourceFilter(f.key)}>{f.label}</button>
+            ))}
+          </div>
+          {filtered.map(p => (
             <PaperCard key={p.id} paper={p} onPaperClick={onPaperClick}
               user={user} bookmarks={bookmarks} onBookmark={onBookmark} onShowAuth={onShowAuth} />
           ))}
+          {filtered.length === 0 && (
+            <div className="ks-card" style={{cursor:'default', color:'#888', textAlign:'center', padding:'40px'}}>
+              해당 필터의 검색 결과가 없습니다.
+            </div>
+          )}
           <div className="ks-pagination">
             {page > 1 && <button className="ks-chip" onClick={() => loadPage(page-1)}>← 이전</button>}
             <span style={{fontSize:'14px', color:'#666'}}>{page} 페이지</span>
-            {results.length === 10 && <button className="ks-chip" onClick={() => loadPage(page+1)}>다음 →</button>}
+            {results.length >= 10 && <button className="ks-chip" onClick={() => loadPage(page+1)}>다음 →</button>}
           </div>
         </div>
       )}
@@ -293,9 +459,13 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
   const year = paper.publication_year || '';
   const doi = paper.doi?.replace('https://doi.org/', '') || '';
   const isOA = paper.open_access?.is_oa;
-  const pdfUrl = paper.open_access?.oa_url || paper.doi || '#';
+  const isKCI = paper._source === 'kci';
+  const pdfUrl = isKCI ? (paper._kci?.paperUrl || '#') : (paper.open_access?.oa_url || paper.doi || '#');
   const citations = paper.cited_by_count || 0;
   const isBookmarked = bookmarks.some(b => b.paperId === paper.id);
+  const abstractText = paper._abstract_text || '';
+  const categories = paper._kci?.categories || '';
+  const titleEn = paper.title_english || '';
 
   return (
     <div>
@@ -303,16 +473,36 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
       <div className="ks-results">
         <button className="ks-chip" onClick={onBack} style={{marginBottom:'20px'}}>← 검색 결과로</button>
         <div className="ks-card" style={{cursor:'default'}}>
-          <div className="ks-card-title" style={{fontSize:'20px', marginBottom:'16px'}}>{title}</div>
+          <div className="ks-card-title" style={{fontSize:'20px', marginBottom:'8px'}}>{title}</div>
+          {titleEn && title !== titleEn && (
+            <div style={{fontSize:'14px', color:'#6b7280', marginBottom:'16px', fontStyle:'italic'}}>{titleEn}</div>
+          )}
           <div className="ks-card-meta" style={{marginBottom:'16px'}}>
             {authors && <div><strong>저자:</strong> {authors}</div>}
             {journal && <div><strong>학술지:</strong> {journal}</div>}
-            {year && <div><strong>발행연도:</strong> {year}</div>}
+            {year && <div><strong>발행연도:</strong> {year}{isKCI && paper._kci?.pubMon ? `.${paper._kci.pubMon}` : ''}</div>}
+            {paper.biblio?.volume && <div><strong>권/호:</strong> {paper.biblio.volume}{paper.biblio.issue ? `(${paper.biblio.issue})` : ''}{paper.biblio.first_page ? `, pp.${paper.biblio.first_page}-${paper.biblio.last_page}` : ''}</div>}
             {doi && <div><strong>DOI:</strong> {doi}</div>}
-            <div><strong>피인용:</strong> {citations}회</div>
+            {isKCI && paper._kci?.uci && <div><strong>UCI:</strong> {paper._kci.uci}</div>}
+            {categories && <div><strong>연구분야:</strong> {categories}</div>}
+            <div><strong>피인용:</strong> {citations}회{isKCI && paper.wos_cited ? ` (WoS: ${paper.wos_cited}회)` : ''}</div>
           </div>
+
+          {abstractText && (
+            <div style={{marginBottom:'16px'}}>
+              <div style={{fontSize:'13px', fontWeight:'700', color:'#1a3a5c', marginBottom:'6px'}}>초록 (Abstract)</div>
+              <div style={{fontSize:'13px', lineHeight:'1.8', color:'#4b5563', background:'#f9fafb', padding:'14px', borderRadius:'8px'}}>
+                {abstractText}
+              </div>
+            </div>
+          )}
+
           <div className="ks-card-footer">
-            <div className="ks-tags">{isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}</div>
+            <div className="ks-tags">
+              {isKCI && <span className="ks-tag ks-tag-kci">KCI</span>}
+              {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
+              {!isKCI && <span className="ks-tag" style={{background:'#f3f0ff', color:'#6d28d9'}}>OpenAlex</span>}
+            </div>
             <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
               <CitationButton paper={paper} />
               <button className="ks-pdf-btn"
@@ -320,7 +510,9 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
                 onClick={() => user ? onBookmark(paper) : onShowAuth()}>
                 {isBookmarked ? '★ 저장됨' : '☆ 저장'}
               </button>
-              {isOA && pdfUrl !== '#' ? (
+              {isKCI ? (
+                <button className="ks-pdf-btn ks-pdf-kci" onClick={() => window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank')}>📄 KCI 원문 →</button>
+              ) : isOA && pdfUrl !== '#' ? (
                 <button className="ks-pdf-btn ks-pdf-oa" onClick={() => window.open(pdfUrl, '_blank')}>📄 원문 PDF →</button>
               ) : (
                 <button className="ks-pdf-btn ks-pdf-google" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank')}>🔍 Google PDF</button>

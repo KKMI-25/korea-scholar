@@ -74,6 +74,10 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background: #fff; 
 .ks-pdf-oa:hover { background: #E1F5EE; }
 .ks-pdf-google { border-color: #9ca3af; color: #6b7280; }
 .ks-pdf-google:hover { background: #f3f4f6; }
+/* KCI 스타일 */
+.ks-pdf-kci { border-color: #185FA5; color: #185FA5; }
+.ks-pdf-kci:hover { background: #E6F1FB; }
+.ks-tag-kci { background: #E6F1FB; color: #185FA5; font-weight: 600; }
 /* ===== 네비게이션 ===== */
 .ks-nav {
   position: fixed;
