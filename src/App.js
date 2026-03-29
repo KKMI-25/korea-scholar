@@ -101,7 +101,6 @@ async function searchOpenAlex(keyword, page = 1) {
 }
 
 // ==================== KCI 검색 ====================
-
 async function searchKCI(keyword, page = 1) {
   try {
     const url = `/api/kci?title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
