@@ -103,7 +103,7 @@ async function searchOpenAlex(keyword, page = 1) {
 // ==================== KCI 검색 ====================
 async function searchKCI(keyword, page = 1) {
   try {
-    const url = `https://korea-scholar.com/api/kci?title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
+    const url = `/api/kci?title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
     const res = await fetch(url);
     const text = await res.text();
     const parser = new DOMParser();
