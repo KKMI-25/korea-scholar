@@ -101,12 +101,9 @@ async function searchOpenAlex(keyword, page = 1) {
 }
 
 // ==================== KCI 검색 ====================
-const KCI_API_KEY = '94351029';
-const KCI_BASE = 'https://open.kci.go.kr/po/openapi/openApiSearch.kci';
-
 async function searchKCI(keyword, page = 1) {
   try {
-    const url = `${KCI_BASE}?apiCode=articleSearch&key=${KCI_API_KEY}&title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
+    const url = `https://korea-scholar.com/api/kci?title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
     const res = await fetch(url);
     const text = await res.text();
     const parser = new DOMParser();
