@@ -101,9 +101,12 @@ async function searchOpenAlex(keyword, page = 1) {
 }
 
 // ==================== KCI 검색 ====================
+const KCI_API_KEY = '94351029';
+const KCI_BASE = 'https://open.kci.go.kr/po/openapi/openApiSearch.kci';
+
 async function searchKCI(keyword, page = 1) {
   try {
-    const url = `/api/kci?title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
+    const url = `${KCI_BASE}?apiCode=articleSearch&key=${KCI_API_KEY}&title=${encodeURIComponent(keyword)}&displayCount=10&page=${page}`;
     const res = await fetch(url);
     const text = await res.text();
     const parser = new DOMParser();
@@ -249,6 +252,7 @@ function Header({ user, onSearch, onShowAuth, lastQuery }) {
 // ==================== 논문 카드 ====================
 function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAuth }) {
   const title = paper.title || '(제목 없음)';
+  const titleEn = paper.title_english || '';
   const authors = paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
   const journal = paper.primary_location?.source?.display_name || '';
   const year = paper.publication_year || '';
@@ -258,9 +262,16 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
   const pdfUrl = isKCI ? (paper._kci?.paperUrl || paper.doi || '#') : (paper.open_access?.oa_url || paper.doi || '#');
   const isBookmarked = bookmarks.some(b => b.paperId === paper.id);
 
+  // 비영어 제목인 경우 영문 제목 병기 여부 판단
+  const isNonLatin = /[가-힣\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u0600-\u06FF]/.test(title);
+  const showBilingual = isNonLatin && titleEn && title !== titleEn;
+
   return (
     <div className="ks-card" onClick={() => onPaperClick(paper)}>
       <div className="ks-card-title">{title}</div>
+      {showBilingual && (
+        <div style={{fontSize:'13px', color:'#6b7280', marginBottom:'6px', fontStyle:'italic', lineHeight:'1.5'}}>{titleEn}</div>
+      )}
       <div className="ks-card-meta">{authors}{journal&&` · ${journal}`}{year&&` · ${year}`}{doi&&` · DOI: ${doi}`}</div>
       <div className="ks-card-footer">
         <div className="ks-tags">
@@ -376,7 +387,8 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
   const [page, setPage] = useState(1);
   const [oaTotal, setOaTotal] = useState(0);
   const [kciTotal, setKciTotal] = useState(0);
-  const [sourceFilter, setSourceFilter] = useState('all'); // 'all', 'kci', 'openalex', 'oa'
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('relevance'); // 'relevance', 'newest', 'oldest', 'cited'
 
   useEffect(() => {
     setLoading(true); setPage(1);
@@ -397,12 +409,25 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
     });
   };
 
+  // 필터 적용
   const filtered = results.filter(p => {
     if (!p.title) return false;
     if (sourceFilter === 'kci') return p._source === 'kci';
     if (sourceFilter === 'openalex') return p._source === 'openalex';
     if (sourceFilter === 'oa') return p.open_access?.is_oa;
+    if (sourceFilter === 'free_pdf') {
+      if (p._source === 'kci') return p.open_access?.is_oa;
+      return p.open_access?.is_oa && p.open_access?.oa_url;
+    }
     return true;
+  });
+
+  // 정렬 적용
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'newest') return (parseInt(b.publication_year) || 0) - (parseInt(a.publication_year) || 0);
+    if (sortBy === 'oldest') return (parseInt(a.publication_year) || 0) - (parseInt(b.publication_year) || 0);
+    if (sortBy === 'cited') return (b.cited_by_count || 0) - (a.cited_by_count || 0);
+    return 0; // relevance = 기본 순서 유지
   });
 
   const totalDisplay = oaTotal + kciTotal;
@@ -412,27 +437,37 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} lastQuery={query} />
       {loading ? <div className="ks-loading">🔍 OpenAlex + KCI 통합 검색 중...</div> : (
         <div className="ks-results">
-          <div className="ks-results-meta">
-            약 <strong>{totalDisplay.toLocaleString()}</strong>건 검색됨
-            {kciTotal > 0 && <span style={{marginLeft:'8px', fontSize:'12px', color:'#1D9E75'}}>(KCI {kciTotal.toLocaleString()}건)</span>}
-            {oaTotal > 0 && <span style={{marginLeft:'4px', fontSize:'12px', color:'#6d28d9'}}>(OpenAlex {oaTotal.toLocaleString()}건)</span>}
+          <div className="ks-results-meta" style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'8px'}}>
+            <div>
+              약 <strong>{totalDisplay.toLocaleString()}</strong>건 검색됨
+              {kciTotal > 0 && <span style={{marginLeft:'8px', fontSize:'12px', color:'#1D9E75'}}>(KCI {kciTotal.toLocaleString()}건)</span>}
+              {oaTotal > 0 && <span style={{marginLeft:'4px', fontSize:'12px', color:'#6d28d9'}}>(OpenAlex {oaTotal.toLocaleString()}건)</span>}
+            </div>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+              style={{padding:'6px 12px', borderRadius:'8px', border:'1px solid #d1d5db', fontSize:'13px', color:'#374151', cursor:'pointer', background:'#fff'}}>
+              <option value="relevance">관련도순</option>
+              <option value="newest">최신순</option>
+              <option value="oldest">오래된순</option>
+              <option value="cited">피인용순</option>
+            </select>
           </div>
           <div className="ks-filter-row">
             {[
-              { key: 'all', label: `전체 (${filtered.length})` },
+              { key: 'all', label: `전체 (${results.filter(p => p.title).length})` },
               { key: 'kci', label: `KCI (${results.filter(p => p._source === 'kci').length})` },
               { key: 'openalex', label: `OpenAlex (${results.filter(p => p._source === 'openalex').length})` },
               { key: 'oa', label: `오픈액세스 (${results.filter(p => p.open_access?.is_oa).length})` },
+              { key: 'free_pdf', label: `🆓 무료PDF (${results.filter(p => p._source === 'kci' ? p.open_access?.is_oa : (p.open_access?.is_oa && p.open_access?.oa_url)).length})` },
             ].map(f => (
               <button key={f.key} className={`ks-chip ${sourceFilter === f.key ? 'active' : ''}`}
                 onClick={() => setSourceFilter(f.key)}>{f.label}</button>
             ))}
           </div>
-          {filtered.map(p => (
+          {sorted.map(p => (
             <PaperCard key={p.id} paper={p} onPaperClick={onPaperClick}
               user={user} bookmarks={bookmarks} onBookmark={onBookmark} onShowAuth={onShowAuth} />
           ))}
-          {filtered.length === 0 && (
+          {sorted.length === 0 && (
             <div className="ks-card" style={{cursor:'default', color:'#888', textAlign:'center', padding:'40px'}}>
               해당 필터의 검색 결과가 없습니다.
             </div>
