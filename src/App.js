@@ -101,8 +101,6 @@ async function searchOpenAlex(keyword, page = 1) {
 }
 
 // ==================== KCI 검색 ====================
-const KCI_API_KEY = '94351029';
-const KCI_BASE = 'https://open.kci.go.kr/po/openapi/openApiSearch.kci';
 
 async function searchKCI(keyword, page = 1) {
   try {
