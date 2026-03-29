@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.korea-scholar.com" }], "destination": "https://korea-scholar.com/:path*", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
