@@ -1,5 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/api/kci", "destination": "/api/kci" }
-  ]
+  "functions": {
+    "api/kci.js": {
+      "runtime": "@vercel/node@3.0.0"
+    }
+  }
 }
