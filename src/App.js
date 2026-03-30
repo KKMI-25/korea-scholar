@@ -7,7 +7,7 @@ import './App.css';
 // ==================== 언어 자동 감지 ====================
 function detectLanguage() {
   const lang = (navigator.language || navigator.userLanguage || 'en').split('-')[0].toLowerCase();
-  return ['ko','en','zh','ja','de','fr','es','pt','ar'].includes(lang) ? lang : 'en';
+  return ['ko','en','zh','ja','de','fr','es','pt','ar','vi','id','th','hi','tr','ru','mn'].includes(lang) ? lang : 'en';
 }
 
 
@@ -63,7 +63,7 @@ function CitationButton({ paper }) {
   return (
     <div style={{position:'relative', display:'inline-block'}}>
       <button className="ks-pdf-btn" style={{borderColor:'#6b7280', color:'#6b7280'}}
-        onClick={e => { e.stopPropagation(); setOpen(!open); }}>📋 인용</button>
+        onClick={e => { e.stopPropagation(); setOpen(!open); }}>📋</button>
       {open && (
         <div onClick={e => e.stopPropagation()}
           style={{position:'absolute', right:0, top:'36px', background:'#fff', border:'1px solid #e5e7eb',
@@ -247,7 +247,8 @@ function Header({ user, onSearch, onShowAuth, lastQuery }) {
 }
 
 // ==================== 논문 카드 ====================
-function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAuth }) {
+function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAuth, siteLang }) {
+  const t = i18n[siteLang] || i18n.en;
   const title = paper.title || '(제목 없음)';
   const titleEn = paper.title_english || '';
   const authors = paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
@@ -272,22 +273,22 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
       <div className="ks-card-meta">{authors}{journal&&` · ${journal}`}{year&&` · ${year}`}{doi&&` · DOI: ${doi}`}</div>
       <div className="ks-card-footer">
         <div className="ks-tags">
-          {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
-          {paper.language==='ko' && <span className="ks-tag ks-tag-blue">한국어</span>}
+          {isOA && <span className="ks-tag ks-tag-green">{t.openAccess}</span>}
+          {paper.language==='ko' && <span className="ks-tag ks-tag-blue">{t.korean}</span>}
         </div>
         <div style={{display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'flex-end'}}>
           <CitationButton paper={paper} />
           <button className="ks-pdf-btn"
             style={{borderColor: isBookmarked?'#f5a623':'#ccc', color: isBookmarked?'#f5a623':'#888'}}
             onClick={e => { e.stopPropagation(); user ? onBookmark(paper) : onShowAuth(); }}>
-            {isBookmarked ? '★ 저장됨' : '☆ 저장'}
+            {isBookmarked ? t.saved : t.save}
           </button>
           {isKCI ? (
-            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>📄 원문 보기 ↗</button>
+            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>{t.viewOriginal}</button>
           ) : isOA && pdfUrl !== '#' ? (
-            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(pdfUrl, '_blank'); }}>무료 PDF ↗</button>
+            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(pdfUrl, '_blank'); }}>{t.freePDF}</button>
           ) : (
-            <button className="ks-pdf-btn ks-pdf-google" onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank'); }}>구글 원문 ↗</button>
+            <button className="ks-pdf-btn ks-pdf-google" onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank'); }}>{t.googleOriginal}</button>
           )}
         </div>
       </div>
@@ -327,8 +328,7 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
                   color: siteLang===code ? '#3DD68C' : 'rgba(255,255,255,0.8)',
                   fontWeight: siteLang===code ? '700' : '400', textAlign:'left'}}>
                 <span style={{fontSize:'18px'}}>
-                  {{'ko':'🇰🇷','en':'🇺🇸','zh':'🇨🇳','ja':'🇯🇵','de':'🇩🇪',
-                    'fr':'🇫🇷','es':'🇪🇸','pt':'🇧🇷','ar':'🇸🇦'}[code]}
+                  {FLAGS[code]}
                 </span>
                 {label}
               </button>
@@ -357,9 +357,9 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
         <button onClick={() => query.trim() && onSearch(query.trim())}>{t.search}</button>
       </div>
       <div className="ks-badges">
-        <span className="ks-badge ks-badge-green">{siteLang === 'ko' ? '무료 검색' : 'Free Search'}</span>
-        <span className="ks-badge">{siteLang === 'ko' ? '국내외 학술 논문' : 'Domestic & International Papers'}</span>
-        <span className="ks-badge">{siteLang === 'ko' ? '오픈액세스' : 'Open Access'}</span>
+        <span className="ks-badge ks-badge-green">{t.badgeFree}</span>
+        <span className="ks-badge">{t.badgePapers}</span>
+        <span className="ks-badge">{t.badgeOA}</span>
       </div>
       <div style={{position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
         fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', whiteSpace:'nowrap'}}>
@@ -375,7 +375,8 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
 }
 
 // ==================== 검색 결과 ====================
-function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmarks, onBookmark }) {
+function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmarks, onBookmark, siteLang }) {
+  const t = i18n[siteLang] || i18n.en;
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -429,27 +430,27 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
   return (
     <div>
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} lastQuery={query} />
-      {loading ? <div className="ks-loading">🔍 논문을 검색하는 중...</div> : (
+      {loading ? <div className="ks-loading">{t.searching}</div> : (
         <div className="ks-results">
           <div className="ks-results-meta" style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'8px'}}>
             <div>
-              약 <strong>{totalDisplay.toLocaleString()}</strong>건 검색됨
+              <strong>{totalDisplay.toLocaleString()}</strong> {t.resultsFound}
             </div>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               style={{padding:'6px 12px', borderRadius:'8px', border:'1px solid #d1d5db', fontSize:'13px', color:'#374151', cursor:'pointer', background:'#fff'}}>
-              <option value="relevance">관련도순</option>
-              <option value="newest">최신순</option>
-              <option value="oldest">오래된순</option>
-              <option value="cited">피인용순</option>
+              <option value="relevance">{t.sortRelevance}</option>
+              <option value="newest">{t.sortNewest}</option>
+              <option value="oldest">{t.sortOldest}</option>
+              <option value="cited">{t.sortCited}</option>
             </select>
           </div>
           <div className="ks-filter-row">
             {[
-              { key: 'all', label: `전체 (${results.filter(p => p.title).length})` },
-              { key: 'kci', label: `국내 논문 (${results.filter(p => p._source === 'kci').length})` },
-              { key: 'openalex', label: `해외 논문 (${results.filter(p => p._source === 'openalex').length})` },
-              { key: 'oa', label: `오픈액세스 (${results.filter(p => p.open_access?.is_oa).length})` },
-              { key: 'free_pdf', label: `🆓 무료PDF (${results.filter(p => p._source === 'kci' ? p.open_access?.is_oa : (p.open_access?.is_oa && p.open_access?.oa_url)).length})` },
+              { key: 'all', label: `${t.filterAll} (${results.filter(p => p.title).length})` },
+              { key: 'kci', label: `${t.filterDomestic} (${results.filter(p => p._source === 'kci').length})` },
+              { key: 'openalex', label: `${t.filterInternational} (${results.filter(p => p._source === 'openalex').length})` },
+              { key: 'oa', label: `${t.filterOA} (${results.filter(p => p.open_access?.is_oa).length})` },
+              { key: 'free_pdf', label: `${t.filterFreePDF} (${results.filter(p => p._source === 'kci' ? p.open_access?.is_oa : (p.open_access?.is_oa && p.open_access?.oa_url)).length})` },
             ].map(f => (
               <button key={f.key} className={`ks-chip ${sourceFilter === f.key ? 'active' : ''}`}
                 onClick={() => setSourceFilter(f.key)}>{f.label}</button>
@@ -457,17 +458,17 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
           </div>
           {sorted.map(p => (
             <PaperCard key={p.id} paper={p} onPaperClick={onPaperClick}
-              user={user} bookmarks={bookmarks} onBookmark={onBookmark} onShowAuth={onShowAuth} />
+              user={user} bookmarks={bookmarks} onBookmark={onBookmark} onShowAuth={onShowAuth} siteLang={siteLang} />
           ))}
           {sorted.length === 0 && (
             <div className="ks-card" style={{cursor:'default', color:'#888', textAlign:'center', padding:'40px'}}>
-              해당 필터의 검색 결과가 없습니다.
+              {t.noResults}
             </div>
           )}
           <div className="ks-pagination">
-            {page > 1 && <button className="ks-chip" onClick={() => loadPage(page-1)}>← 이전</button>}
-            <span style={{fontSize:'14px', color:'#666'}}>{page} 페이지</span>
-            {results.length >= 10 && <button className="ks-chip" onClick={() => loadPage(page+1)}>다음 →</button>}
+            {page > 1 && <button className="ks-chip" onClick={() => loadPage(page-1)}>{t.prevPage}</button>}
+            <span style={{fontSize:'14px', color:'#666'}}>{page} {t.pageUnit}</span>
+            {results.length >= 10 && <button className="ks-chip" onClick={() => loadPage(page+1)}>{t.nextPage}</button>}
           </div>
         </div>
       )}
@@ -495,26 +496,26 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
     <div>
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} />
       <div className="ks-results">
-        <button className="ks-chip" onClick={onBack} style={{marginBottom:'20px'}}>← 검색 결과로</button>
+        <button className="ks-chip" onClick={onBack} style={{marginBottom:'20px'}}>{(i18n[siteLang]||i18n.en).backToResults}</button>
         <div className="ks-card" style={{cursor:'default'}}>
           <div className="ks-card-title" style={{fontSize:'20px', marginBottom:'8px'}}>{title}</div>
           {titleEn && title !== titleEn && (
             <div style={{fontSize:'14px', color:'#6b7280', marginBottom:'16px', fontStyle:'italic'}}>{titleEn}</div>
           )}
           <div className="ks-card-meta" style={{marginBottom:'16px'}}>
-            {authors && <div><strong>저자:</strong> {authors}</div>}
-            {journal && <div><strong>학술지:</strong> {journal}</div>}
-            {year && <div><strong>발행연도:</strong> {year}{isKCI && paper._kci?.pubMon ? `.${paper._kci.pubMon}` : ''}</div>}
-            {paper.biblio?.volume && <div><strong>권/호:</strong> {paper.biblio.volume}{paper.biblio.issue ? `(${paper.biblio.issue})` : ''}{paper.biblio.first_page ? `, pp.${paper.biblio.first_page}-${paper.biblio.last_page}` : ''}</div>}
+            {authors && <div><strong>{(i18n[siteLang]||i18n.en).author}:</strong> {authors}</div>}
+            {journal && <div><strong>{(i18n[siteLang]||i18n.en).journal}:</strong> {journal}</div>}
+            {year && <div><strong>{(i18n[siteLang]||i18n.en).pubYear}:</strong> {year}{isKCI && paper._kci?.pubMon ? `.${paper._kci.pubMon}` : ''}</div>}
+            {paper.biblio?.volume && <div><strong>{(i18n[siteLang]||i18n.en).volIssue}:</strong> {paper.biblio.volume}{paper.biblio.issue ? `(${paper.biblio.issue})` : ''}{paper.biblio.first_page ? `, pp.${paper.biblio.first_page}-${paper.biblio.last_page}` : ''}</div>}
             {doi && <div><strong>DOI:</strong> {doi}</div>}
             {isKCI && paper._kci?.uci && <div><strong>UCI:</strong> {paper._kci.uci}</div>}
-            {categories && <div><strong>연구분야:</strong> {categories}</div>}
-            <div><strong>피인용:</strong> {citations}회{isKCI && paper.wos_cited ? ` (WoS: ${paper.wos_cited}회)` : ''}</div>
+            {categories && <div><strong>{(i18n[siteLang]||i18n.en).researchField}:</strong> {categories}</div>}
+            <div><strong>{(i18n[siteLang]||i18n.en).citedBy}:</strong> {citations}회{isKCI && paper.wos_cited ? ` (WoS: ${paper.wos_cited}회)` : ''}</div>
           </div>
 
           {abstractText && (
             <div style={{marginBottom:'16px'}}>
-              <div style={{fontSize:'13px', fontWeight:'700', color:'#1a3a5c', marginBottom:'6px'}}>초록 (Abstract)</div>
+              <div style={{fontSize:'13px', fontWeight:'700', color:'#1a3a5c', marginBottom:'6px'}}>{(i18n[siteLang]||i18n.en).abstract}</div>
               <div style={{fontSize:'13px', lineHeight:'1.8', color:'#4b5563', background:'#f9fafb', padding:'14px', borderRadius:'8px'}}>
                 {abstractText}
               </div>
@@ -523,21 +524,21 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
 
           <div className="ks-card-footer">
             <div className="ks-tags">
-              {isOA && <span className="ks-tag ks-tag-green">오픈액세스</span>}
+              {isOA && <span className="ks-tag ks-tag-green">{(i18n[siteLang]||i18n.en).openAccess}</span>}
             </div>
             <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
               <CitationButton paper={paper} />
               <button className="ks-pdf-btn"
                 style={{borderColor: isBookmarked?'#f5a623':'#ccc', color: isBookmarked?'#f5a623':'#888'}}
                 onClick={() => user ? onBookmark(paper) : onShowAuth()}>
-                {isBookmarked ? '★ 저장됨' : '☆ 저장'}
+                {isBookmarked ? (i18n[siteLang]||i18n.en).saved : (i18n[siteLang]||i18n.en).save}
               </button>
               {isKCI ? (
-                <button className="ks-pdf-btn ks-pdf-oa" onClick={() => window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank')}>📄 원문 보기 →</button>
+                <button className="ks-pdf-btn ks-pdf-oa" onClick={() => window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank')}>{(i18n[siteLang]||i18n.en).viewOriginal}</button>
               ) : isOA && pdfUrl !== '#' ? (
-                <button className="ks-pdf-btn ks-pdf-oa" onClick={() => window.open(pdfUrl, '_blank')}>📄 원문 PDF →</button>
+                <button className="ks-pdf-btn ks-pdf-oa" onClick={() => window.open(pdfUrl, '_blank')}>{(i18n[siteLang]||i18n.en).freePDF}</button>
               ) : (
-                <button className="ks-pdf-btn ks-pdf-google" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank')}>🔍 Google PDF</button>
+                <button className="ks-pdf-btn ks-pdf-google" onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank')}>{(i18n[siteLang]||i18n.en).googleOriginal}</button>
               )}
             </div>
           </div>
@@ -550,7 +551,14 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
 // ==================== 다국어 지원 ====================
 const LANGUAGES = {
   ko: '한국어', en: 'English', zh: '中文', ja: '日本語',
-  de: 'Deutsch', fr: 'Français', es: 'Español', pt: 'Português', ar: 'العربية'
+  vi: 'Tiếng Việt', id: 'Bahasa Indonesia', th: 'ภาษาไทย', hi: 'हिन्दी',
+  de: 'Deutsch', fr: 'Français', es: 'Español', pt: 'Português',
+  ar: 'العربية', tr: 'Türkçe', ru: 'Русский', mn: 'Монгол'
+};
+
+const FLAGS = {
+  ko:'🇰🇷', en:'🇺🇸', zh:'🇨🇳', ja:'🇯🇵', vi:'🇻🇳', id:'🇮🇩', th:'🇹🇭', hi:'🇮🇳',
+  de:'🇩🇪', fr:'🇫🇷', es:'🇪🇸', pt:'🇧🇷', ar:'🇸🇦', tr:'🇹🇷', ru:'🇷🇺', mn:'🇲🇳'
 };
 
 const i18n = {
@@ -566,6 +574,18 @@ const i18n = {
     search: '검색', myLibrary: '📖 내 서재', logout: '로그아웃',
     searchPlaceholder: '논문 제목, 저자, 키워드 검색...',
     tagline: '전 세계 학술 논문을 무료로 검색하세요',
+    resultsFound: '건 검색됨', searching: '🔍 논문을 검색하는 중...',
+    filterAll: '전체', filterDomestic: '국내 논문', filterInternational: '해외 논문',
+    filterOA: '오픈액세스', filterFreePDF: '🆓 무료PDF',
+    sortRelevance: '관련도순', sortNewest: '최신순', sortOldest: '오래된순', sortCited: '피인용순',
+    prevPage: '← 이전', nextPage: '다음 →', pageUnit: '페이지',
+    noResults: '해당 필터의 검색 결과가 없습니다.',
+    openAccess: '오픈액세스', korean: '한국어',
+    viewOriginal: '📄 원문 보기 ↗', freePDF: '무료 PDF ↗', googleOriginal: '구글 원문 ↗',
+    citation: '📋 인용', saved: '★ 저장됨', save: '☆ 저장',
+    backToResults: '← 검색 결과로', author: '저자', journal: '학술지', pubYear: '발행연도',
+    volIssue: '권/호', researchField: '연구분야', citedBy: '피인용', abstract: '초록 (Abstract)',
+    badgeFree: '무료 검색', badgePapers: '국내외 학술 논문', badgeOA: '오픈액세스',
   },
   en: {
     login: 'Log In', signup: 'Sign Up', googleLogin: 'Continue with Google',
@@ -579,6 +599,18 @@ const i18n = {
     search: 'Search', myLibrary: '📖 My Library', logout: 'Log Out',
     searchPlaceholder: 'Search papers, authors, keywords...',
     tagline: 'Search academic papers worldwide for free',
+    resultsFound: 'results found', searching: '🔍 Searching papers...',
+    filterAll: 'All', filterDomestic: 'Domestic', filterInternational: 'International',
+    filterOA: 'Open Access', filterFreePDF: '🆓 Free PDF',
+    sortRelevance: 'Relevance', sortNewest: 'Newest', sortOldest: 'Oldest', sortCited: 'Most Cited',
+    prevPage: '← Prev', nextPage: 'Next →', pageUnit: 'Page',
+    noResults: 'No results found for this filter.',
+    openAccess: 'Open Access', korean: 'Korean',
+    viewOriginal: '📄 View Original ↗', freePDF: 'Free PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Cite', saved: '★ Saved', save: '☆ Save',
+    backToResults: '← Back to Results', author: 'Author', journal: 'Journal', pubYear: 'Year',
+    volIssue: 'Vol/Issue', researchField: 'Field', citedBy: 'Cited by', abstract: 'Abstract',
+    badgeFree: 'Free Search', badgePapers: 'Domestic & International', badgeOA: 'Open Access',
   },
   zh: {
     login: '登录', signup: '注册', googleLogin: '使用Google继续',
@@ -592,6 +624,18 @@ const i18n = {
     search: '搜索', myLibrary: '📖 我的书库', logout: '退出',
     searchPlaceholder: '搜索论文、作者、关键词...',
     tagline: '免费搜索全球学术论文',
+    resultsFound: '条结果', searching: '🔍 正在搜索...',
+    filterAll: '全部', filterDomestic: '韩国论文', filterInternational: '国际论文',
+    filterOA: '开放获取', filterFreePDF: '🆓 免费PDF',
+    sortRelevance: '相关度', sortNewest: '最新', sortOldest: '最早', sortCited: '被引用数',
+    prevPage: '← 上一页', nextPage: '下一页 →', pageUnit: '页',
+    noResults: '没有结果。',
+    openAccess: '开放获取', korean: '韩语',
+    viewOriginal: '📄 查看原文 ↗', freePDF: '免费PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 引用', saved: '★ 已保存', save: '☆ 保存',
+    backToResults: '← 返回', author: '作者', journal: '期刊', pubYear: '年份',
+    volIssue: '卷/期', researchField: '领域', citedBy: '被引用', abstract: '摘要',
+    badgeFree: '免费搜索', badgePapers: '国内外论文', badgeOA: '开放获取',
   },
   ja: {
     login: 'ログイン', signup: '会員登録', googleLogin: 'Googleで続ける',
@@ -605,6 +649,18 @@ const i18n = {
     search: '検索', myLibrary: '📖 マイライブラリ', logout: 'ログアウト',
     searchPlaceholder: '論文・著者・キーワードを検索...',
     tagline: '世界中の学術論文を無料で検索',
+    resultsFound: '件', searching: '🔍 検索中...',
+    filterAll: 'すべて', filterDomestic: '韓国論文', filterInternational: '海外論文',
+    filterOA: 'オープンアクセス', filterFreePDF: '🆓 無料PDF',
+    sortRelevance: '関連度', sortNewest: '新しい順', sortOldest: '古い順', sortCited: '被引用順',
+    prevPage: '← 前へ', nextPage: '次へ →', pageUnit: 'ページ',
+    noResults: '結果がありません。',
+    openAccess: 'オープンアクセス', korean: '韓国語',
+    viewOriginal: '📄 原文 ↗', freePDF: '無料PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 引用', saved: '★ 保存済み', save: '☆ 保存',
+    backToResults: '← 戻る', author: '著者', journal: '学術誌', pubYear: '発行年',
+    volIssue: '巻/号', researchField: '分野', citedBy: '被引用', abstract: '要旨',
+    badgeFree: '無料検索', badgePapers: '国内外の論文', badgeOA: 'オープンアクセス',
   },
   de: {
     login: 'Anmelden', signup: 'Registrieren', googleLogin: 'Mit Google fortfahren',
@@ -618,6 +674,18 @@ const i18n = {
     search: 'Suchen', myLibrary: '📖 Meine Bibliothek', logout: 'Abmelden',
     searchPlaceholder: 'Paper, Autoren, Stichwörter suchen...',
     tagline: 'Akademische Paper weltweit kostenlos suchen',
+    resultsFound: 'Ergebnisse', searching: '🔍 Suche...',
+    filterAll: 'Alle', filterDomestic: 'Korea', filterInternational: 'International',
+    filterOA: 'Open Access', filterFreePDF: '🆓 Kostenlos',
+    sortRelevance: 'Relevanz', sortNewest: 'Neueste', sortOldest: 'Älteste', sortCited: 'Meistzitiert',
+    prevPage: '← Zurück', nextPage: 'Weiter →', pageUnit: 'Seite',
+    noResults: 'Keine Ergebnisse.',
+    openAccess: 'Open Access', korean: 'Koreanisch',
+    viewOriginal: '📄 Original ↗', freePDF: 'Kostenlos PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Zitieren', saved: '★ Gespeichert', save: '☆ Speichern',
+    backToResults: '← Zurück', author: 'Autor', journal: 'Zeitschrift', pubYear: 'Jahr',
+    volIssue: 'Bd./Nr.', researchField: 'Fachgebiet', citedBy: 'Zitiert', abstract: 'Zusammenfassung',
+    badgeFree: 'Kostenlos', badgePapers: 'In- & Ausland', badgeOA: 'Open Access',
   },
   fr: {
     login: 'Connexion', signup: "S'inscrire", googleLogin: 'Continuer avec Google',
@@ -670,6 +738,167 @@ const i18n = {
     search: 'بحث', myLibrary: '📖 مكتبتي', logout: 'تسجيل الخروج',
     searchPlaceholder: 'ابحث عن المقالات والمؤلفين والكلمات الرئيسية...',
     tagline: 'ابحث في الأوراق الأكاديمية حول العالم مجانًا',
+    resultsFound: 'نتيجة', searching: '🔍 جاري البحث...',
+    filterAll: 'الكل', filterDomestic: 'مقالات كورية', filterInternational: 'دولي',
+    filterOA: 'وصول مفتوح', filterFreePDF: '🆓 PDF مجاني',
+    sortRelevance: 'الصلة', sortNewest: 'الأحدث', sortOldest: 'الأقدم', sortCited: 'الأكثر استشهادًا',
+    prevPage: '← السابق', nextPage: 'التالي →', pageUnit: 'صفحة',
+    noResults: 'لا توجد نتائج لهذا الفلتر.',
+    openAccess: 'وصول مفتوح', korean: 'كورية',
+    viewOriginal: '📄 عرض الأصل ↗', freePDF: 'PDF مجاني ↗', googleOriginal: 'Google ↗',
+    citation: '📋 اقتباس', saved: '★ محفوظ', save: '☆ حفظ',
+    backToResults: '← رجوع', author: 'المؤلف', journal: 'المجلة', pubYear: 'السنة',
+    volIssue: 'المجلد/العدد', researchField: 'المجال', citedBy: 'الاستشهادات', abstract: 'الملخص',
+    badgeFree: 'مجاني', badgePapers: 'مقالات محلية ودولية', badgeOA: 'وصول مفتوح',
+  },
+  vi: {
+    login: 'Đăng nhập', signup: 'Đăng ký', googleLogin: 'Tiếp tục với Google',
+    or: 'hoặc', name: 'Họ tên *', affiliation: 'Cơ quan (VD: ĐHQG Hà Nội)',
+    position: 'Chức vụ (VD: Giáo sư, NCS)', phone: 'Điện thoại (tùy chọn)',
+    email: 'Email *', password: 'Mật khẩu *', passwordConfirm: 'Xác nhận mật khẩu *',
+    privacyRequired: '[Bắt buộc] Đồng ý thu thập thông tin cá nhân', marketingOptional: '[Tùy chọn] Đồng ý nhận thông tin tiếp thị',
+    alreadyHaveAccount: 'Đã có tài khoản? Đăng nhập →', noAccount: 'Chưa có? Đăng ký →',
+    search: 'Tìm kiếm', myLibrary: '📖 Thư viện', logout: 'Đăng xuất',
+    searchPlaceholder: 'Tìm bài báo, tác giả, từ khóa...', tagline: 'Tìm kiếm bài báo học thuật miễn phí',
+    resultsFound: 'kết quả', searching: '🔍 Đang tìm kiếm...',
+    filterAll: 'Tất cả', filterDomestic: 'Hàn Quốc', filterInternational: 'Quốc tế',
+    filterOA: 'Truy cập mở', filterFreePDF: '🆓 PDF miễn phí',
+    sortRelevance: 'Liên quan', sortNewest: 'Mới nhất', sortOldest: 'Cũ nhất', sortCited: 'Trích dẫn nhiều',
+    prevPage: '← Trước', nextPage: 'Sau →', pageUnit: 'Trang',
+    noResults: 'Không tìm thấy kết quả.',
+    openAccess: 'Truy cập mở', korean: 'Tiếng Hàn',
+    viewOriginal: '📄 Xem bản gốc ↗', freePDF: 'PDF miễn phí ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Trích dẫn', saved: '★ Đã lưu', save: '☆ Lưu',
+    backToResults: '← Quay lại', author: 'Tác giả', journal: 'Tạp chí', pubYear: 'Năm',
+    volIssue: 'Tập/Số', researchField: 'Lĩnh vực', citedBy: 'Trích dẫn', abstract: 'Tóm tắt',
+    badgeFree: 'Miễn phí', badgePapers: 'Trong và ngoài nước', badgeOA: 'Truy cập mở',
+  },
+  id: {
+    login: 'Masuk', signup: 'Daftar', googleLogin: 'Lanjutkan dengan Google',
+    or: 'atau', name: 'Nama *', affiliation: 'Institusi (cth: UI)',
+    position: 'Jabatan (cth: Profesor)', phone: 'Telepon (opsional)',
+    email: 'Email *', password: 'Kata sandi *', passwordConfirm: 'Konfirmasi *',
+    privacyRequired: '[Wajib] Menyetujui pengumpulan data pribadi', marketingOptional: '[Opsional] Setuju menerima info pemasaran',
+    alreadyHaveAccount: 'Sudah punya akun? Masuk →', noAccount: 'Belum punya? Daftar →',
+    search: 'Cari', myLibrary: '📖 Perpustakaan', logout: 'Keluar',
+    searchPlaceholder: 'Cari artikel, penulis, kata kunci...', tagline: 'Cari artikel akademik gratis',
+    resultsFound: 'hasil', searching: '🔍 Mencari...',
+    filterAll: 'Semua', filterDomestic: 'Korea', filterInternational: 'Internasional',
+    filterOA: 'Akses Terbuka', filterFreePDF: '🆓 PDF Gratis',
+    sortRelevance: 'Relevansi', sortNewest: 'Terbaru', sortOldest: 'Terlama', sortCited: 'Terbanyak Dikutip',
+    prevPage: '← Sebelum', nextPage: 'Selanjut →', pageUnit: 'Hal',
+    noResults: 'Tidak ada hasil.',
+    openAccess: 'Akses Terbuka', korean: 'Korea',
+    viewOriginal: '📄 Lihat Asli ↗', freePDF: 'PDF Gratis ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Kutip', saved: '★ Tersimpan', save: '☆ Simpan',
+    backToResults: '← Kembali', author: 'Penulis', journal: 'Jurnal', pubYear: 'Tahun',
+    volIssue: 'Vol/No', researchField: 'Bidang', citedBy: 'Dikutip', abstract: 'Abstrak',
+    badgeFree: 'Gratis', badgePapers: 'Domestik & Internasional', badgeOA: 'Akses Terbuka',
+  },
+  th: {
+    login: 'เข้าสู่ระบบ', signup: 'สมัคร', googleLogin: 'ดำเนินการด้วย Google',
+    or: 'หรือ', name: 'ชื่อ *', affiliation: 'สถาบัน', position: 'ตำแหน่ง', phone: 'โทร (ไม่บังคับ)',
+    email: 'อีเมล *', password: 'รหัสผ่าน *', passwordConfirm: 'ยืนยันรหัส *',
+    privacyRequired: '[จำเป็น] ยินยอมเก็บข้อมูลส่วนบุคคล', marketingOptional: '[ทางเลือก] ยินยอมรับข่าวสาร',
+    alreadyHaveAccount: 'มีบัญชี? เข้าสู่ระบบ →', noAccount: 'ยังไม่มี? สมัคร →',
+    search: 'ค้นหา', myLibrary: '📖 ห้องสมุด', logout: 'ออก',
+    searchPlaceholder: 'ค้นหาบทความ ผู้แต่ง...', tagline: 'ค้นหาบทความวิชาการฟรี',
+    resultsFound: 'ผลลัพธ์', searching: '🔍 กำลังค้นหา...',
+    filterAll: 'ทั้งหมด', filterDomestic: 'เกาหลี', filterInternational: 'นานาชาติ',
+    filterOA: 'เข้าถึงเปิด', filterFreePDF: '🆓 PDF ฟรี',
+    sortRelevance: 'เกี่ยวข้อง', sortNewest: 'ใหม่สุด', sortOldest: 'เก่าสุด', sortCited: 'อ้างอิงมาก',
+    prevPage: '← ก่อนหน้า', nextPage: 'ถัดไป →', pageUnit: 'หน้า',
+    noResults: 'ไม่พบผลลัพธ์',
+    openAccess: 'เข้าถึงเปิด', korean: 'เกาหลี',
+    viewOriginal: '📄 ดูต้นฉบับ ↗', freePDF: 'PDF ฟรี ↗', googleOriginal: 'Google ↗',
+    citation: '📋 อ้างอิง', saved: '★ บันทึกแล้ว', save: '☆ บันทึก',
+    backToResults: '← กลับ', author: 'ผู้แต่ง', journal: 'วารสาร', pubYear: 'ปี',
+    volIssue: 'ปีที่/ฉบับ', researchField: 'สาขา', citedBy: 'อ้างอิง', abstract: 'บทคัดย่อ',
+    badgeFree: 'ฟรี', badgePapers: 'ในและต่างประเทศ', badgeOA: 'เข้าถึงเปิด',
+  },
+  hi: {
+    login: 'लॉग इन', signup: 'साइन अप', googleLogin: 'Google से जारी रखें',
+    or: 'या', name: 'नाम *', affiliation: 'संस्था', position: 'पद', phone: 'फोन (वैकल्पिक)',
+    email: 'ईमेल *', password: 'पासवर्ड *', passwordConfirm: 'पासवर्ड पुष्टि *',
+    privacyRequired: '[आवश्यक] डेटा संग्रह से सहमत', marketingOptional: '[वैकल्पिक] मार्केटिंग से सहमत',
+    alreadyHaveAccount: 'खाता है? लॉग इन →', noAccount: 'खाता नहीं? साइन अप →',
+    search: 'खोजें', myLibrary: '📖 पुस्तकालय', logout: 'लॉग आउट',
+    searchPlaceholder: 'शोधपत्र, लेखक खोजें...', tagline: 'शोधपत्र मुफ्त में खोजें',
+    resultsFound: 'परिणाम', searching: '🔍 खोज रहे हैं...',
+    filterAll: 'सभी', filterDomestic: 'कोरियाई', filterInternational: 'अंतरराष्ट्रीय',
+    filterOA: 'ओपन एक्सेस', filterFreePDF: '🆓 मुफ्त PDF',
+    sortRelevance: 'प्रासंगिकता', sortNewest: 'नवीनतम', sortOldest: 'पुराना', sortCited: 'सर्वाधिक उद्धृत',
+    prevPage: '← पिछला', nextPage: 'अगला →', pageUnit: 'पृष्ठ',
+    noResults: 'कोई परिणाम नहीं।',
+    openAccess: 'ओपन एक्सेस', korean: 'कोरियाई',
+    viewOriginal: '📄 मूल देखें ↗', freePDF: 'मुफ्त PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 उद्धरण', saved: '★ सहेजा', save: '☆ सहेजें',
+    backToResults: '← वापस', author: 'लेखक', journal: 'पत्रिका', pubYear: 'वर्ष',
+    volIssue: 'खंड/अंक', researchField: 'क्षेत्र', citedBy: 'उद्धृत', abstract: 'सारांश',
+    badgeFree: 'मुफ्त', badgePapers: 'घरेलू और अंतरराष्ट्रीय', badgeOA: 'ओपन एक्सेस',
+  },
+  tr: {
+    login: 'Giriş', signup: 'Kayıt', googleLogin: 'Google ile devam',
+    or: 'veya', name: 'Ad Soyad *', affiliation: 'Kurum', position: 'Pozisyon', phone: 'Tel (isteğe bağlı)',
+    email: 'E-posta *', password: 'Şifre *', passwordConfirm: 'Şifre Onayı *',
+    privacyRequired: '[Zorunlu] Veri toplamayı kabul ediyorum', marketingOptional: '[İsteğe bağlı] Pazarlama kabul',
+    alreadyHaveAccount: 'Hesabınız var mı? Giriş →', noAccount: 'Hesap yok mu? Kayıt →',
+    search: 'Ara', myLibrary: '📖 Kütüphane', logout: 'Çıkış',
+    searchPlaceholder: 'Makale, yazar, anahtar kelime...', tagline: 'Akademik makaleleri ücretsiz arayın',
+    resultsFound: 'sonuç', searching: '🔍 Aranıyor...',
+    filterAll: 'Tümü', filterDomestic: 'Kore', filterInternational: 'Uluslararası',
+    filterOA: 'Açık Erişim', filterFreePDF: '🆓 Ücretsiz PDF',
+    sortRelevance: 'İlgililik', sortNewest: 'En Yeni', sortOldest: 'En Eski', sortCited: 'En Çok Atıf',
+    prevPage: '← Önceki', nextPage: 'Sonraki →', pageUnit: 'Sayfa',
+    noResults: 'Sonuç bulunamadı.',
+    openAccess: 'Açık Erişim', korean: 'Korece',
+    viewOriginal: '📄 Orijinal ↗', freePDF: 'Ücretsiz PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Alıntı', saved: '★ Kaydedildi', save: '☆ Kaydet',
+    backToResults: '← Geri', author: 'Yazar', journal: 'Dergi', pubYear: 'Yıl',
+    volIssue: 'Cilt/Sayı', researchField: 'Alan', citedBy: 'Atıf', abstract: 'Özet',
+    badgeFree: 'Ücretsiz', badgePapers: 'Ulusal ve Uluslararası', badgeOA: 'Açık Erişim',
+  },
+  ru: {
+    login: 'Войти', signup: 'Регистрация', googleLogin: 'Через Google',
+    or: 'или', name: 'ФИО *', affiliation: 'Учреждение', position: 'Должность', phone: 'Тел (необяз.)',
+    email: 'Эл. почта *', password: 'Пароль *', passwordConfirm: 'Подтверждение *',
+    privacyRequired: '[Обяз.] Согласие на сбор данных', marketingOptional: '[Необяз.] Согласие на рассылки',
+    alreadyHaveAccount: 'Есть аккаунт? Войти →', noAccount: 'Нет аккаунта? Регистрация →',
+    search: 'Поиск', myLibrary: '📖 Библиотека', logout: 'Выйти',
+    searchPlaceholder: 'Статьи, авторы, ключевые слова...', tagline: 'Бесплатный поиск научных статей',
+    resultsFound: 'результатов', searching: '🔍 Поиск...',
+    filterAll: 'Все', filterDomestic: 'Корейские', filterInternational: 'Международные',
+    filterOA: 'Открытый доступ', filterFreePDF: '🆓 Бесплатный PDF',
+    sortRelevance: 'Релевантность', sortNewest: 'Новейшие', sortOldest: 'Старейшие', sortCited: 'По цитированию',
+    prevPage: '← Назад', nextPage: 'Далее →', pageUnit: 'Стр.',
+    noResults: 'Нет результатов.',
+    openAccess: 'Открытый доступ', korean: 'Корейский',
+    viewOriginal: '📄 Оригинал ↗', freePDF: 'Бесплатный PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Цитата', saved: '★ Сохранено', save: '☆ Сохранить',
+    backToResults: '← Назад', author: 'Автор', journal: 'Журнал', pubYear: 'Год',
+    volIssue: 'Том/Номер', researchField: 'Область', citedBy: 'Цитирования', abstract: 'Аннотация',
+    badgeFree: 'Бесплатно', badgePapers: 'Отечественные и зарубежные', badgeOA: 'Открытый доступ',
+  },
+  mn: {
+    login: 'Нэвтрэх', signup: 'Бүртгүүлэх', googleLogin: 'Google-ээр',
+    or: 'эсвэл', name: 'Нэр *', affiliation: 'Байгууллага', position: 'Тушаал', phone: 'Утас',
+    email: 'И-мэйл *', password: 'Нууц үг *', passwordConfirm: 'Баталгаажуулах *',
+    privacyRequired: '[Заавал] Мэдээлэл цуглуулахыг зөвшөөрнө', marketingOptional: '[Сонголт] Маркетинг зөвшөөрнө',
+    alreadyHaveAccount: 'Бүртгэлтэй? Нэвтрэх →', noAccount: 'Бүртгэлгүй? Бүртгүүлэх →',
+    search: 'Хайх', myLibrary: '📖 Номын сан', logout: 'Гарах',
+    searchPlaceholder: 'Өгүүлэл, зохиогч хайх...', tagline: 'Эрдэм шинжилгээний өгүүлэл үнэгүй хайх',
+    resultsFound: 'үр дүн', searching: '🔍 Хайж байна...',
+    filterAll: 'Бүгд', filterDomestic: 'Солонгос', filterInternational: 'Олон улсын',
+    filterOA: 'Нээлттэй', filterFreePDF: '🆓 Үнэгүй PDF',
+    sortRelevance: 'Хамааралтай', sortNewest: 'Шинэ', sortOldest: 'Хуучин', sortCited: 'Иш татсан',
+    prevPage: '← Өмнөх', nextPage: 'Дараах →', pageUnit: 'Хуудас',
+    noResults: 'Үр дүн олдсонгүй.',
+    openAccess: 'Нээлттэй', korean: 'Солонгос',
+    viewOriginal: '📄 Эх хувь ↗', freePDF: 'Үнэгүй PDF ↗', googleOriginal: 'Google ↗',
+    citation: '📋 Иш татах', saved: '★ Хадгалсан', save: '☆ Хадгалах',
+    backToResults: '← Буцах', author: 'Зохиогч', journal: 'Сэтгүүл', pubYear: 'Он',
+    volIssue: 'Боть/Дугаар', researchField: 'Чиглэл', citedBy: 'Иш татсан', abstract: 'Хураангуй',
+    badgeFree: 'Үнэгүй', badgePapers: 'Дотоод болон гадаад', badgeOA: 'Нээлттэй',
   },
 };
 
