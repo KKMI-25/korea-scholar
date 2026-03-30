@@ -1473,7 +1473,7 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
 
-  useEffect(() => {
+useEffect(() => {
   getRedirectResult(auth).then(async (result) => {
     if (result?.user) {
       const userRef = doc(db, 'users', result.user.uid);
@@ -1489,7 +1489,6 @@ export default function App() {
       }
     }
   });
-
   const unsub = onAuthStateChanged(auth, u => {
     setUser(u);
     if (u) loadBookmarks(u.uid);
