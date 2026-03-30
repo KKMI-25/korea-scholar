@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBVx3OjGqIEnS3vGBUWgpIuaTY6Enajt4c",
-  authDomain: "korea-scholar.firebaseapp.com",
+  authDomain: "www.korea-scholar.com",
   projectId: "korea-scholar",
   storageBucket: "korea-scholar.firebasestorage.app",
   messagingSenderId: "765446290553",
