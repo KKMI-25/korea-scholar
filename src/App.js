@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db, signInWithGoogle, signInWithEmail, signUpWithEmail, logOut } from './firebase';
+import { auth, db, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, logOut } from './firebase';
 import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { collection, addDoc, deleteDoc, doc, getDocs, query, where, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import './App.css';
@@ -962,6 +962,18 @@ function AuthModal({ onClose }) {
   const [privacyAgree, setPrivacyAgree] = useState(false);
   const [marketingAgree, setMarketingAgree] = useState(false);
   const [error, setError] = useState('');
+  const [resetMsg, setResetMsg] = useState('');
+
+  const handleResetPassword = async () => {
+    setError(''); setResetMsg('');
+    if (!email.trim()) { setError('이메일을 입력해주세요. / Please enter your email.'); return; }
+    try {
+      await resetPassword(email);
+      setResetMsg('비밀번호 재설정 이메일이 발송되었습니다. 이메일을 확인해주세요. / Password reset email sent. Please check your inbox.');
+    } catch (e) {
+      setError(e.code === 'auth/user-not-found' ? '등록되지 않은 이메일입니다. / Email not found.' : e.message);
+    }
+  };
 
   const handleEmail = async () => {
     setError('');
@@ -1027,9 +1039,9 @@ function AuthModal({ onClose }) {
           ))}
         </div>
 
-        <h2 className="ks-modal-title">{mode === 'login' ? t.login : t.signup}</h2>
-        <button className="ks-btn-google" onClick={handleGoogle}>🔵 {t.googleLogin}</button>
-        <div className="ks-divider">{t.or}</div>
+        <h2 className="ks-modal-title">{mode === 'login' ? t.login : mode === 'signup' ? t.signup : '🔑 비밀번호 찾기'}</h2>
+        {mode !== 'reset' && <button className="ks-btn-google" onClick={handleGoogle}>🔵 {t.googleLogin}</button>}
+        {mode !== 'reset' && <div className="ks-divider">{t.or}</div>}
 
         {mode === 'signup' && (
           <>
@@ -1040,7 +1052,9 @@ function AuthModal({ onClose }) {
           </>
         )}
         <input className="ks-modal-input" type="email" placeholder={t.email} value={email} onChange={e => setEmail(e.target.value)} />
-        <input className="ks-modal-input" type="password" placeholder={t.password} value={password} onChange={e => setPassword(e.target.value)} />
+        {mode !== 'reset' && (
+          <input className="ks-modal-input" type="password" placeholder={t.password} value={password} onChange={e => setPassword(e.target.value)} />
+        )}
         {mode === 'signup' && (
           <input className="ks-modal-input" type="password" placeholder={t.passwordConfirm} value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} />
         )}
@@ -1073,10 +1087,29 @@ function AuthModal({ onClose }) {
         )}
 
         {error && <p className="ks-error">{error}</p>}
-        <button className="ks-btn-submit" onClick={handleEmail}>{mode === 'login' ? t.login : t.signup}</button>
-        <p className="ks-switch" onClick={() => { setMode(mode==='login'?'signup':'login'); setError(''); setPrivacyAgree(false); setMarketingAgree(false); }}>
-          {mode === 'login' ? t.noAccount : t.alreadyHaveAccount}
-        </p>
+        {resetMsg && <p style={{color:'#1D9E75', fontSize:'13px', marginBottom:'8px'}}>{resetMsg}</p>}
+
+        {mode === 'reset' ? (
+          <>
+            <button className="ks-btn-submit" onClick={handleResetPassword}>📧 비밀번호 재설정 이메일 발송</button>
+            <p className="ks-switch" onClick={() => { setMode('login'); setError(''); setResetMsg(''); }}>
+              ← 로그인으로 돌아가기 / Back to Login
+            </p>
+          </>
+        ) : (
+          <>
+            <button className="ks-btn-submit" onClick={handleEmail}>{mode === 'login' ? t.login : t.signup}</button>
+            {mode === 'login' && (
+              <p className="ks-switch" style={{fontSize:'12px', color:'#6b7280', marginBottom:'4px'}}
+                onClick={() => { setMode('reset'); setError(''); setResetMsg(''); }}>
+                비밀번호를 잊으셨나요? / Forgot password?
+              </p>
+            )}
+            <p className="ks-switch" onClick={() => { setMode(mode==='login'?'signup':'login'); setError(''); setPrivacyAgree(false); setMarketingAgree(false); }}>
+              {mode === 'login' ? t.noAccount : t.alreadyHaveAccount}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
