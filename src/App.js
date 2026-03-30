@@ -1462,11 +1462,8 @@ function AuthActionPage() {
 
 // ==================== 메인 앱 ====================
 export default function App() {
-  // ── /__/auth/action 처리 (비밀번호 재설정) ──
   const urlParams = new URLSearchParams(window.location.search);
   const authMode = urlParams.get('mode');
-  if (authMode === 'resetPassword') return <AuthActionPage />;
-  // ────────────────────────────────────────────
 
   const [page, setPage] = useState('home');
   const [siteLang, setSiteLang] = useState(detectLanguage());
@@ -1525,7 +1522,7 @@ export default function App() {
   };
 
   const commonProps = { user, onSearch: handleSearch, onShowAuth: () => setShowAuth(true), siteLang, onLangChange: setSiteLang };
-
+  if (authMode === 'resetPassword') return <AuthActionPage />;
   return (
     <div>
       {page === 'home' && <HomePage {...commonProps} />}
