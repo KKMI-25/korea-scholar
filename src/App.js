@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, logOut } from './firebase';
-import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, confirmPasswordReset } from 'firebase/auth';
+import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, confirmPasswordReset, getRedirectResult } from 'firebase/auth';
 import { collection, addDoc, deleteDoc, doc, getDocs, query, where, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import './App.css';
 
@@ -1474,13 +1474,29 @@ export default function App() {
   const [bookmarks, setBookmarks] = useState([]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => {
-      setUser(u);
-      if (u) loadBookmarks(u.uid);
-      else { setBookmarks([]); setPage('home'); }
-    });
-    return unsub;
-  }, []);
+  getRedirectResult(auth).then(async (result) => {
+    if (result?.user) {
+      const userRef = doc(db, 'users', result.user.uid);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          uid: result.user.uid, email: result.user.email,
+          name: result.user.displayName || '',
+          affiliation: '', position: '', phone: '',
+          privacyAgree: true, marketingAgree: false,
+          language: 'ko', createdAt: new Date(), provider: 'google'
+        });
+      }
+    }
+  });
+
+  const unsub = onAuthStateChanged(auth, u => {
+    setUser(u);
+    if (u) loadBookmarks(u.uid);
+    else { setBookmarks([]); setPage('home'); }
+  });
+  return unsub;
+}, []);
 
   const loadBookmarks = async (uid) => {
     const q = query(collection(db, 'bookmarks'), where('uid', '==', uid));
