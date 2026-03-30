@@ -249,7 +249,6 @@ function Header({ user, onSearch, onShowAuth, lastQuery }) {
 // ==================== 논문 카드 ====================
 function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAuth, siteLang }) {
   const t = i18n[siteLang] || i18n.en;
-  const [showAbstract, setShowAbstract] = useState(false);
   const title = paper.title || '(제목 없음)';
   const titleEn = paper.title_english || '';
   const authors = paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
@@ -260,7 +259,6 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
   const isKCI = paper._source === 'kci';
   const pdfUrl = isKCI ? (paper._kci?.paperUrl || paper.doi || '#') : (paper.open_access?.oa_url || paper.doi || '#');
   const isBookmarked = bookmarks.some(b => b.paperId === paper.id);
-  const abstractText = paper._abstract_text || '';
 
   // 비영어 제목인 경우 영문 제목 병기 여부 판단
   const isNonLatin = /[가-힣\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u0600-\u06FF]/.test(title);
@@ -273,23 +271,6 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
         <div style={{fontSize:'13px', color:'#6b7280', marginBottom:'6px', fontStyle:'italic', lineHeight:'1.5'}}>{titleEn}</div>
       )}
       <div className="ks-card-meta">{authors}{journal&&` · ${journal}`}{year&&` · ${year}`}{doi&&` · DOI: ${doi}`}</div>
-
-      {abstractText && (
-        <div style={{marginTop:'6px'}}>
-          <button onClick={e => { e.stopPropagation(); setShowAbstract(!showAbstract); }}
-            style={{background:'none', border:'none', color:'#3b82f6', fontSize:'12px', cursor:'pointer', padding:'2px 0'}}>
-            {showAbstract ? `▲ ${t.abstract}` : `▼ ${t.abstract}`}
-          </button>
-          {showAbstract && (
-            <div style={{fontSize:'12px', lineHeight:'1.7', color:'#6b7280', background:'#f9fafb',
-              padding:'10px', borderRadius:'6px', marginTop:'4px', maxHeight:'150px', overflowY:'auto'}}
-              onClick={e => e.stopPropagation()}>
-              {abstractText}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="ks-card-footer">
         <div className="ks-tags">
           {isOA && <span className="ks-tag ks-tag-green">{t.openAccess}</span>}
@@ -330,7 +311,8 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
             style={{background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.25)',
               borderRadius:'8px', padding:'6px 14px', color:'#fff', cursor:'pointer',
               fontSize:'14px', display:'flex', alignItems:'center', gap:'6px'}}>
-            {FLAGS[siteLang]} {LANGUAGES[siteLang]} ▾
+            {{'ko':'🇰🇷','en':'🇺🇸','zh':'🇨🇳','ja':'🇯🇵','de':'🇩🇪',
+              'fr':'🇫🇷','es':'🇪🇸','pt':'🇧🇷','ar':'🇸🇦'}[siteLang]} {LANGUAGES[siteLang]} ▾
           </button>
           <div id="lang-dropdown"
             style={{display:'none', position:'absolute', right:0, top:'40px',
@@ -485,20 +467,7 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
           )}
           <div className="ks-pagination">
             {page > 1 && <button className="ks-chip" onClick={() => loadPage(page-1)}>{t.prevPage}</button>}
-            {(() => {
-              const totalPages = Math.ceil(totalDisplay / 20) || 1;
-              const maxShow = 5;
-              let start = Math.max(1, page - Math.floor(maxShow/2));
-              let end = Math.min(totalPages, start + maxShow - 1);
-              if (end - start < maxShow - 1) start = Math.max(1, end - maxShow + 1);
-              const pages = [];
-              for (let i = start; i <= end; i++) pages.push(i);
-              return pages.map(p => (
-                <button key={p} className={`ks-chip ${p === page ? 'active' : ''}`}
-                  onClick={() => p !== page && loadPage(p)}
-                  style={p === page ? {fontWeight:'700'} : {}}>{p}</button>
-              ));
-            })()}
+            <span style={{fontSize:'14px', color:'#666'}}>{page} {t.pageUnit}</span>
             {results.length >= 10 && <button className="ks-chip" onClick={() => loadPage(page+1)}>{t.nextPage}</button>}
           </div>
         </div>
@@ -1225,124 +1194,26 @@ function MyPage({ user, onSearch }) {
 }
 
 // ==================== 내 서재 ====================
-function LibraryPage({ user, bookmarks, onPaperClick, onSearch, onShowAuth, onRemoveBookmark, onUpdateBookmark, siteLang }) {
-  const t = i18n[siteLang] || i18n.en;
-  const [searchTerm, setSearchTerm] = useState('');
-  const [folderFilter, setFolderFilter] = useState('all');
-  const [editingMemo, setEditingMemo] = useState(null);
-  const [memoText, setMemoText] = useState('');
-  const [editingFolder, setEditingFolder] = useState(null);
-  const [folderText, setFolderText] = useState('');
-
-  // 폴더 목록 추출
-  const folders = [...new Set(bookmarks.map(b => b.folder).filter(Boolean))];
-
-  // 필터 + 검색 적용
-  const filtered = bookmarks.filter(b => {
-    if (folderFilter !== 'all' && (b.folder || '') !== folderFilter) return false;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      return (b.title||'').toLowerCase().includes(q) || (b.authors||'').toLowerCase().includes(q) || (b.memo||'').toLowerCase().includes(q);
-    }
-    return true;
-  });
-
-  const handleSaveMemo = (id) => {
-    onUpdateBookmark(id, { memo: memoText });
-    setEditingMemo(null);
-  };
-
-  const handleSaveFolder = (id) => {
-    onUpdateBookmark(id, { folder: folderText.trim() });
-    setEditingFolder(null);
-  };
-
+function LibraryPage({ user, bookmarks, onPaperClick, onSearch, onShowAuth, onRemoveBookmark }) {
   return (
     <div>
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} />
       <div className="ks-results">
-        <div className="ks-results-meta" style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'8px'}}>
-          <div>📖 {t.myLibrary} — {bookmarks.length}</div>
-          <div style={{display:'flex', gap:'6px', alignItems:'center'}}>
-            <input type="text" placeholder={t.searchPlaceholder} value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{padding:'6px 12px', borderRadius:'8px', border:'1px solid #d1d5db', fontSize:'13px', width:'200px'}} />
-          </div>
-        </div>
-
-        {/* 폴더 필터 */}
-        {folders.length > 0 && (
-          <div className="ks-filter-row">
-            <button className={`ks-chip ${folderFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setFolderFilter('all')}>{t.filterAll} ({bookmarks.length})</button>
-            <button className={`ks-chip ${folderFilter === '' ? 'active' : ''}`}
-              onClick={() => setFolderFilter('')}>📁 미분류 ({bookmarks.filter(b => !b.folder).length})</button>
-            {folders.map(f => (
-              <button key={f} className={`ks-chip ${folderFilter === f ? 'active' : ''}`}
-                onClick={() => setFolderFilter(f)}>📁 {f} ({bookmarks.filter(b => b.folder === f).length})</button>
-            ))}
-          </div>
-        )}
-
-        {filtered.length === 0 ? (
+        <div className="ks-results-meta">📖 내 서재 — {bookmarks.length}편 저장됨</div>
+        {bookmarks.length === 0 ? (
           <div className="ks-card" style={{cursor:'default', color:'#888', textAlign:'center', padding:'40px'}}>
-            {bookmarks.length === 0 ? (
-              <>{t.noResults}<br/>{t.save}</>
-            ) : t.noResults}
+            저장된 논문이 없습니다.<br/>검색 후 ☆ 버튼으로 저장해보세요!
           </div>
-        ) : filtered.map(b => (
+        ) : bookmarks.map(b => (
           <div key={b.id} className="ks-card">
             <div className="ks-card-title" onClick={() => onPaperClick(b.paperData)} style={{cursor:'pointer'}}>{b.title}</div>
             <div className="ks-card-meta">{b.authors}{b.year&&` · ${b.year}`}</div>
-
-            {/* 메모 표시/편집 */}
-            <div style={{marginTop:'8px'}}>
-              {editingMemo === b.id ? (
-                <div style={{display:'flex', gap:'6px', alignItems:'center'}} onClick={e => e.stopPropagation()}>
-                  <input type="text" value={memoText} onChange={e => setMemoText(e.target.value)}
-                    placeholder="메모 입력..."
-                    style={{flex:1, padding:'6px 10px', borderRadius:'6px', border:'1px solid #d1d5db', fontSize:'12px'}}
-                    onKeyDown={e => e.key === 'Enter' && handleSaveMemo(b.id)} />
-                  <button className="ks-chip active" onClick={() => handleSaveMemo(b.id)} style={{fontSize:'11px'}}>✓</button>
-                  <button className="ks-chip" onClick={() => setEditingMemo(null)} style={{fontSize:'11px'}}>✕</button>
-                </div>
-              ) : (
-                <div style={{fontSize:'12px', color: b.memo ? '#4b5563' : '#ccc', cursor:'pointer'}}
-                  onClick={e => { e.stopPropagation(); setEditingMemo(b.id); setMemoText(b.memo || ''); }}>
-                  📝 {b.memo || 'メモ추가...'}
-                </div>
-              )}
-            </div>
-
-            {/* 폴더 표시/편집 */}
-            <div style={{marginTop:'4px'}}>
-              {editingFolder === b.id ? (
-                <div style={{display:'flex', gap:'6px', alignItems:'center'}} onClick={e => e.stopPropagation()}>
-                  <input type="text" value={folderText} onChange={e => setFolderText(e.target.value)}
-                    placeholder="폴더명..."
-                    list="folder-suggestions"
-                    style={{flex:1, padding:'6px 10px', borderRadius:'6px', border:'1px solid #d1d5db', fontSize:'12px'}}
-                    onKeyDown={e => e.key === 'Enter' && handleSaveFolder(b.id)} />
-                  <datalist id="folder-suggestions">
-                    {folders.map(f => <option key={f} value={f} />)}
-                  </datalist>
-                  <button className="ks-chip active" onClick={() => handleSaveFolder(b.id)} style={{fontSize:'11px'}}>✓</button>
-                  <button className="ks-chip" onClick={() => setEditingFolder(null)} style={{fontSize:'11px'}}>✕</button>
-                </div>
-              ) : (
-                <div style={{fontSize:'12px', color: b.folder ? '#6d28d9' : '#ccc', cursor:'pointer'}}
-                  onClick={e => { e.stopPropagation(); setEditingFolder(b.id); setFolderText(b.folder || ''); }}>
-                  📁 {b.folder || '폴더 지정...'}
-                </div>
-              )}
-            </div>
-
-            <div className="ks-card-footer" style={{marginTop:'8px'}}>
+            <div className="ks-card-footer">
               <div></div>
               <div style={{display:'flex', gap:'6px'}}>
                 {b.paperData && <CitationButton paper={b.paperData} />}
                 <button className="ks-pdf-btn" style={{borderColor:'#f5a623', color:'#f5a623'}}
-                  onClick={() => onRemoveBookmark(b.id)}>★ {t.save}</button>
+                  onClick={() => onRemoveBookmark(b.id)}>★ 저장 취소</button>
               </div>
             </div>
           </div>
@@ -1387,20 +1258,11 @@ export default function App() {
       const newDoc = await addDoc(collection(db, 'bookmarks'), {
         uid: user.uid, paperId: paper.id, title: paper.title || '',
         authors: paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '',
-        year: paper.publication_year || '', paperData: paper, savedAt: new Date(),
-        memo: '', folder: ''
+        year: paper.publication_year || '', paperData: paper, savedAt: new Date()
       });
       setBookmarks(prev => [...prev, { id: newDoc.id, paperId: paper.id, title: paper.title,
-        authors: paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '',
-        year: paper.publication_year, paperData: paper, memo: '', folder: '' }]);
+        authors: '', year: paper.publication_year, paperData: paper }]);
     }
-  };
-
-  const handleUpdateBookmark = async (bookmarkId, updates) => {
-    try {
-      await updateDoc(doc(db, 'bookmarks', bookmarkId), updates);
-      setBookmarks(prev => prev.map(b => b.id === bookmarkId ? { ...b, ...updates } : b));
-    } catch (err) { console.error('Bookmark update failed:', err); }
   };
 
   const handleSearch = (q) => {
@@ -1429,9 +1291,7 @@ export default function App() {
           onRemoveBookmark={async (id) => {
             await deleteDoc(doc(db, 'bookmarks', id));
             setBookmarks(prev => prev.filter(b => b.id !== id));
-          }}
-          onUpdateBookmark={handleUpdateBookmark}
-          {...commonProps} />
+          }} {...commonProps} />
       )}
       {page === 'mypage' && user && <MyPage user={user} onSearch={handleSearch} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
