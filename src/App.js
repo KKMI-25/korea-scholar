@@ -477,7 +477,7 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
 }
 
 // ==================== 논문 상세 ====================
-function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBookmark }) {
+function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBookmark, siteLang }) {
   const title = paper.title || '(제목 없음)';
   const authors = paper.authorships?.map(a => a.author?.display_name).filter(Boolean).join(', ') || '저자 미상';
   const journal = paper.primary_location?.source?.display_name || '';
