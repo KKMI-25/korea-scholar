@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, logOut } from './firebase';
-import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, confirmPasswordReset } from 'firebase/auth';
+import { onAuthStateChanged, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { collection, addDoc, deleteDoc, doc, getDocs, query, where, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import './App.css';
 
@@ -1385,89 +1385,8 @@ function LibraryPage({ user, bookmarks, onPaperClick, onSearch, onShowAuth, onRe
   );
 }
 
-// ==================== 비밀번호 재설정 페이지 ====================
-function AuthActionPage() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const oobCode = urlParams.get('oobCode');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleReset = async () => {
-    if (!password) { setError('새 비밀번호를 입력해주세요.'); return; }
-    if (password.length < 6) { setError('비밀번호는 6자 이상이어야 합니다.'); return; }
-    if (password !== passwordConfirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
-    setLoading(true);
-    try {
-      await confirmPasswordReset(auth, oobCode, password);
-      setDone(true);
-    } catch (e) {
-      setError('링크가 만료되었거나 이미 사용된 링크입니다. 비밀번호 찾기를 다시 시도해주세요.');
-    }
-    setLoading(false);
-  };
-
-  if (done) return (
-    <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',background:'#f0f4f8'}}>
-      <div style={{textAlign:'center',padding:'48px 40px',background:'#fff',borderRadius:'20px',
-        boxShadow:'0 8px 32px rgba(0,0,0,0.1)',maxWidth:'360px',width:'90%'}}>
-        <div style={{fontSize:'56px',marginBottom:'16px'}}>✅</div>
-        <div style={{fontSize:'20px',fontWeight:'700',color:'#1a3a5c',marginBottom:'8px'}}>비밀번호 변경 완료!</div>
-        <div style={{fontSize:'14px',color:'#6b7280',marginBottom:'28px'}}>새 비밀번호로 로그인하세요.</div>
-        <button onClick={() => window.location.href='/'}
-          style={{padding:'12px 32px',background:'#1a3a5c',color:'#fff',border:'none',
-            borderRadius:'10px',cursor:'pointer',fontSize:'15px',fontWeight:'600'}}>
-          홈으로 돌아가기
-        </button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',background:'#f0f4f8'}}>
-      <div style={{padding:'48px 40px',background:'#fff',borderRadius:'20px',
-        boxShadow:'0 8px 32px rgba(0,0,0,0.1)',width:'360px',maxWidth:'90%'}}>
-        <div style={{textAlign:'center',marginBottom:'8px'}}>
-          <span style={{fontSize:'32px'}}>🔑</span>
-        </div>
-        <div style={{fontSize:'22px',fontWeight:'700',color:'#1a3a5c',marginBottom:'6px',textAlign:'center'}}>새 비밀번호 설정</div>
-        <div style={{fontSize:'13px',color:'#6b7280',marginBottom:'24px',textAlign:'center'}}>Korea Scholar 비밀번호를 변경합니다.</div>
-        <input type="password" placeholder="새 비밀번호 (6자 이상)" value={password}
-          onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleReset()}
-          style={{width:'100%',padding:'12px',borderRadius:'10px',border:'1px solid #d1d5db',
-            marginBottom:'10px',boxSizing:'border-box',fontSize:'14px'}} />
-        <input type="password" placeholder="새 비밀번호 확인" value={passwordConfirm}
-          onChange={e => setPasswordConfirm(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleReset()}
-          style={{width:'100%',padding:'12px',borderRadius:'10px',border:'1px solid #d1d5db',
-            marginBottom:'12px',boxSizing:'border-box',fontSize:'14px'}} />
-        {error && <div style={{color:'#e53e3e',fontSize:'13px',marginBottom:'12px',
-          background:'#fff5f5',padding:'10px',borderRadius:'8px'}}>{error}</div>}
-        <button onClick={handleReset} disabled={loading}
-          style={{width:'100%',padding:'13px',background: loading ? '#9ca3af' : '#1a3a5c',
-            color:'#fff',border:'none',borderRadius:'10px',cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight:'700',fontSize:'15px'}}>
-          {loading ? '처리 중...' : '비밀번호 변경'}
-        </button>
-        <div style={{textAlign:'center',marginTop:'16px'}}>
-          <a href="/" style={{fontSize:'13px',color:'#6b7280',textDecoration:'none'}}>← 홈으로 돌아가기</a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ==================== 메인 앱 ====================
 export default function App() {
-  // ── /__/auth/action 처리 (비밀번호 재설정) ──
-  const urlParams = new URLSearchParams(window.location.search);
-  const authMode = urlParams.get('mode');
-  if (authMode === 'resetPassword') return <AuthActionPage />;
-  // ────────────────────────────────────────────
-
   const [page, setPage] = useState('home');
   const [siteLang, setSiteLang] = useState(detectLanguage());
   const [searchQuery, setSearchQuery] = useState('');
