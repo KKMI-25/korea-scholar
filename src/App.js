@@ -963,15 +963,21 @@ function AuthModal({ onClose }) {
   const [marketingAgree, setMarketingAgree] = useState(false);
   const [error, setError] = useState('');
   const [resetMsg, setResetMsg] = useState('');
+  
+  // 로그인 진행 중 버튼 중복 클릭 방지를 위한 상태 추가
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleResetPassword = async () => {
     setError(''); setResetMsg('');
     if (!email.trim()) { setError('이메일을 입력해주세요. / Please enter your email.'); return; }
+    setIsLoading(true);
     try {
       await resetPassword(email);
       setResetMsg('비밀번호 재설정 이메일이 발송되었습니다. 이메일을 확인해주세요. / Password reset email sent. Please check your inbox.');
     } catch (e) {
       setError(e.code === 'auth/user-not-found' ? '등록되지 않은 이메일입니다. / Email not found.' : e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -983,6 +989,10 @@ function AuthModal({ onClose }) {
       if (password.length < 6) { setError('비밀번호는 6자 이상이어야 합니다. / Password must be at least 6 characters.'); return; }
       if (!privacyAgree) { setError('필수 개인정보 수집·이용에 동의해주세요. / Please agree to the required privacy policy.'); return; }
     }
+    
+    if (isLoading) return;
+    setIsLoading(true);
+    
     try {
       if (mode === 'login') {
         await signInWithEmail(email, password); onClose();
@@ -998,10 +1008,16 @@ function AuthModal({ onClose }) {
     } catch (e) {
       setError(e.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' :
         e.code === 'auth/weak-password' ? '비밀번호는 6자 이상이어야 합니다.' : e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogle = async () => {
+    if (isLoading) return; // 이미 로딩 중이면 클릭 무시
+    setIsLoading(true);
+    setError('');
+
     try {
       const cred = await signInWithGoogle();
       const userRef = doc(db, 'users', cred.user.uid);
@@ -1014,23 +1030,34 @@ function AuthModal({ onClose }) {
         });
       }
       onClose();
-    } catch (e) { setError(e.message); }
+    } catch (e) { 
+      // 팝업 에러 상세 처리
+      if (e.code === 'auth/popup-closed-by-user') {
+        setError('로그인 팝업 창을 닫으셨습니다. 다시 시도해주세요.');
+      } else if (e.code === 'auth/cancelled-popup-request') {
+        setError('이미 로그인 팝업이 열려있거나 요청이 취소되었습니다.');
+      } else {
+        setError('구글 로그인 중 오류가 발생했습니다: ' + e.message); 
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const privacyText = PRIVACY_CONTENT.required[lang] || PRIVACY_CONTENT.required.en;
   const marketingText = PRIVACY_CONTENT.marketing[lang] || PRIVACY_CONTENT.marketing.en;
 
   return (
-    <div className="ks-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="ks-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !isLoading) onClose(); }}>
       <div className="ks-modal" onMouseDown={e => e.stopPropagation()}
         style={{maxHeight:'90vh', overflowY:'auto', direction: isRTL ? 'rtl' : 'ltr'}}>
-        <button className="ks-modal-close" onClick={onClose}>✕</button>
+        {!isLoading && <button className="ks-modal-close" onClick={onClose}>✕</button>}
 
         {/* 언어 선택 */}
         <div style={{display:'flex', flexWrap:'wrap', gap:'4px', marginBottom:'14px'}}>
           {Object.entries(LANGUAGES).map(([code, label]) => (
-            <button key={code} onClick={() => setLang(code)}
-              style={{fontSize:'11px', padding:'3px 8px', borderRadius:'6px', cursor:'pointer',
+            <button key={code} onClick={() => setLang(code)} disabled={isLoading}
+              style={{fontSize:'11px', padding:'3px 8px', borderRadius:'6px', cursor: isLoading ? 'not-allowed' : 'pointer',
                 border: lang===code ? '1.5px solid #1D9E75' : '1px solid #e5e7eb',
                 background: lang===code ? '#f0fdf4' : '#fff',
                 color: lang===code ? '#1D9E75' : '#555', fontWeight: lang===code ? '700' : '400'}}>
@@ -1040,23 +1067,30 @@ function AuthModal({ onClose }) {
         </div>
 
         <h2 className="ks-modal-title">{mode === 'login' ? t.login : mode === 'signup' ? t.signup : '🔑 비밀번호 찾기'}</h2>
-        {mode !== 'reset' && <button className="ks-btn-google" onClick={handleGoogle}>🔵 {t.googleLogin}</button>}
+        
+        {/* 구글 로그인 버튼 (로딩 상태 적용) */}
+        {mode !== 'reset' && (
+          <button className="ks-btn-google" onClick={handleGoogle} disabled={isLoading} 
+            style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+            🔵 {isLoading ? '처리 중...' : t.googleLogin}
+          </button>
+        )}
         {mode !== 'reset' && <div className="ks-divider">{t.or}</div>}
 
         {mode === 'signup' && (
           <>
-            <input className="ks-modal-input" type="text" placeholder={t.name} value={name} onChange={e => setName(e.target.value)} />
-            <input className="ks-modal-input" type="text" placeholder={t.affiliation} value={affiliation} onChange={e => setAffiliation(e.target.value)} />
-            <input className="ks-modal-input" type="text" placeholder={t.position} value={position} onChange={e => setPosition(e.target.value)} />
-            <input className="ks-modal-input" type="tel" placeholder={t.phone} value={phone} onChange={e => setPhone(e.target.value)} />
+            <input className="ks-modal-input" type="text" placeholder={t.name} value={name} onChange={e => setName(e.target.value)} disabled={isLoading} />
+            <input className="ks-modal-input" type="text" placeholder={t.affiliation} value={affiliation} onChange={e => setAffiliation(e.target.value)} disabled={isLoading} />
+            <input className="ks-modal-input" type="text" placeholder={t.position} value={position} onChange={e => setPosition(e.target.value)} disabled={isLoading} />
+            <input className="ks-modal-input" type="tel" placeholder={t.phone} value={phone} onChange={e => setPhone(e.target.value)} disabled={isLoading} />
           </>
         )}
-        <input className="ks-modal-input" type="email" placeholder={t.email} value={email} onChange={e => setEmail(e.target.value)} />
+        <input className="ks-modal-input" type="email" placeholder={t.email} value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
         {mode !== 'reset' && (
-          <input className="ks-modal-input" type="password" placeholder={t.password} value={password} onChange={e => setPassword(e.target.value)} />
+          <input className="ks-modal-input" type="password" placeholder={t.password} value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
         )}
         {mode === 'signup' && (
-          <input className="ks-modal-input" type="password" placeholder={t.passwordConfirm} value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} />
+          <input className="ks-modal-input" type="password" placeholder={t.passwordConfirm} value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} disabled={isLoading} />
         )}
 
         {mode === 'signup' && (
@@ -1065,10 +1099,10 @@ function AuthModal({ onClose }) {
             <div style={{background:'#f9fafb', borderRadius:'8px', padding:'12px', fontSize:'12px'}}>
               <div style={{maxHeight:'72px', overflowY:'auto', color:'#555', lineHeight:'1.6',
                 marginBottom:'10px', whiteSpace:'pre-line'}}>{privacyText}</div>
-              <label style={{display:'flex', alignItems:'center', gap:'8px', cursor:'pointer',
+              <label style={{display:'flex', alignItems:'center', gap:'8px', cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontWeight:'700', color:'#1a1a1a'}}>
-                <input type="checkbox" checked={privacyAgree} onChange={e => setPrivacyAgree(e.target.checked)}
-                  style={{width:'16px', height:'16px', cursor:'pointer', accentColor:'#1D9E75'}} />
+                <input type="checkbox" checked={privacyAgree} onChange={e => setPrivacyAgree(e.target.checked)} disabled={isLoading}
+                  style={{width:'16px', height:'16px', cursor: isLoading ? 'not-allowed' : 'pointer', accentColor:'#1D9E75'}} />
                 {t.privacyRequired}
               </label>
             </div>
@@ -1076,36 +1110,40 @@ function AuthModal({ onClose }) {
             <div style={{background:'#f9fafb', borderRadius:'8px', padding:'12px', fontSize:'12px'}}>
               <div style={{maxHeight:'72px', overflowY:'auto', color:'#555', lineHeight:'1.6',
                 marginBottom:'10px', whiteSpace:'pre-line'}}>{marketingText}</div>
-              <label style={{display:'flex', alignItems:'center', gap:'8px', cursor:'pointer',
+              <label style={{display:'flex', alignItems:'center', gap:'8px', cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontWeight:'600', color:'#374151'}}>
-                <input type="checkbox" checked={marketingAgree} onChange={e => setMarketingAgree(e.target.checked)}
-                  style={{width:'16px', height:'16px', cursor:'pointer', accentColor:'#f5a623'}} />
+                <input type="checkbox" checked={marketingAgree} onChange={e => setMarketingAgree(e.target.checked)} disabled={isLoading}
+                  style={{width:'16px', height:'16px', cursor: isLoading ? 'not-allowed' : 'pointer', accentColor:'#f5a623'}} />
                 {t.marketingOptional}
               </label>
             </div>
           </div>
         )}
 
-        {error && <p className="ks-error">{error}</p>}
+        {error && <p className="ks-error" style={{ color: '#e53e3e', fontSize: '13px', marginBottom: '10px' }}>{error}</p>}
         {resetMsg && <p style={{color:'#1D9E75', fontSize:'13px', marginBottom:'8px'}}>{resetMsg}</p>}
 
         {mode === 'reset' ? (
           <>
-            <button className="ks-btn-submit" onClick={handleResetPassword}>📧 비밀번호 재설정 이메일 발송</button>
-            <p className="ks-switch" onClick={() => { setMode('login'); setError(''); setResetMsg(''); }}>
+            <button className="ks-btn-submit" onClick={handleResetPassword} disabled={isLoading} style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+              {isLoading ? '발송 중...' : '📧 비밀번호 재설정 이메일 발송'}
+            </button>
+            <p className="ks-switch" onClick={() => { if(!isLoading) { setMode('login'); setError(''); setResetMsg(''); } }}>
               ← 로그인으로 돌아가기 / Back to Login
             </p>
           </>
         ) : (
           <>
-            <button className="ks-btn-submit" onClick={handleEmail}>{mode === 'login' ? t.login : t.signup}</button>
+            <button className="ks-btn-submit" onClick={handleEmail} disabled={isLoading} style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+              {isLoading ? '처리 중...' : (mode === 'login' ? t.login : t.signup)}
+            </button>
             {mode === 'login' && (
               <p className="ks-switch" style={{fontSize:'12px', color:'#6b7280', marginBottom:'4px'}}
-                onClick={() => { setMode('reset'); setError(''); setResetMsg(''); }}>
+                onClick={() => { if(!isLoading) { setMode('reset'); setError(''); setResetMsg(''); } }}>
                 비밀번호를 잊으셨나요? / Forgot password?
               </p>
             )}
-            <p className="ks-switch" onClick={() => { setMode(mode==='login'?'signup':'login'); setError(''); setPrivacyAgree(false); setMarketingAgree(false); }}>
+            <p className="ks-switch" onClick={() => { if(!isLoading) { setMode(mode==='login'?'signup':'login'); setError(''); setPrivacyAgree(false); setMarketingAgree(false); } }}>
               {mode === 'login' ? t.noAccount : t.alreadyHaveAccount}
             </p>
           </>

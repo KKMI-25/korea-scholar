@@ -17,6 +17,11 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
+// 빈 팝업창 멈춤 현상 및 캐시 충돌 방지를 위해 계정 선택 강제 옵션 추가
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const signInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
