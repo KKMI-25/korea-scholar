@@ -948,7 +948,7 @@ const PRIVACY_CONTENT = {
 
 // ==================== 로그인/회원가입 모달 ====================
 function AuthModal({ onClose }) {
-  const [lang, setLang] = useState('ko');
+  const [lang, setLang] = useState(detectLanguage());
   const t = i18n[lang] || i18n.en;
   const isRTL = lang === 'ar';
   const [mode, setMode] = useState('login');
@@ -1021,8 +1021,8 @@ function AuthModal({ onClose }) {
   const marketingText = PRIVACY_CONTENT.marketing[lang] || PRIVACY_CONTENT.marketing.en;
 
   return (
-    <div className="ks-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="ks-modal" onMouseDown={e => e.stopPropagation()}
+    <div className="ks-modal-overlay" onClick={onClose}>
+      <div className="ks-modal" onClick={e => e.stopPropagation()}
         style={{maxHeight:'90vh', overflowY:'auto', direction: isRTL ? 'rtl' : 'ltr'}}>
         <button className="ks-modal-close" onClick={onClose}>✕</button>
 
