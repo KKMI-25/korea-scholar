@@ -224,7 +224,7 @@ function Header({ user, onSearch, onShowAuth, lastQuery }) {
   return (
     <div className="ks-header">
       <div className="ks-header-left">
-        <div className="ks-home-logo-small" onClick={() => onSearch(null)} style={{cursor:'pointer'}}>Korea <span>Scholar</span></div>
+        <div className="ks-home-logo-small" onClick={() => onSearch(null)} style={{cursor:'pointer'}}>K-<span>Scholar</span></div>
         <div className="ks-home-searchbox ks-header-search">
           <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && searchInput.trim() && onSearch(searchInput.trim())} />
@@ -365,7 +365,7 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
       </div>
       <div className="ks-home-logo">
         <span>📚</span>
-        <span className="ks-home-logo-text">Korea <span>Scholar</span></span>
+        <span className="ks-home-logo-text">K-<span>Scholar</span></span>
       </div>
       <p className="ks-home-tagline">{t.tagline}</p>
       <div className="ks-home-searchbox">
