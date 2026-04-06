@@ -935,9 +935,9 @@ const i18n = {
 
 const PRIVACY_CONTENT = {
   required: {
-    ko: `[필수] 개인정보 수집 및 이용 동의\n(주)한국지식미디어연구원(이하 "회사")은 Korea Scholar 서비스의 원활한 제공을 위해 아래와 같이 개인정보를 수집·이용합니다.\n\n■ 수집 항목: 이름, 이메일 주소, 비밀번호, 소속 기관, 직책\n■ 수집 목적: 본인 식별, 학술 정보 검색 서비스 제공, 고객 문의 응대 및 고지사항 전달\n■ 제3자 제공: 원칙적으로 제3자에게 제공하지 않으며, 법령에 의한 경우에만 예외적으로 제공합니다.\n■ 보유 및 이용 기간: 회원 탈퇴 시까지 (관계 법령에 따라 보관이 필요한 경우 해당 기간까지)\n■ 동의 거부 권리: 거부 시 회원가입 및 서비스 이용이 제한됩니다.`,
-    en: `[Required] Consent to Collection and Use of Personal Information\nKorea Knowledge Media Research Institute, Inc. ("Company") collects and uses personal information as follows for the smooth provision of Korea Scholar services.\n\n■ Items collected: Name, email address, password, institution, position\n■ Purpose: User identification, academic search service, customer support\n■ Third-party provision: Not provided to third parties in principle, except as required by law.\n■ Retention period: Until membership withdrawal (or as required by applicable law)\n■ Right to refuse: Refusal may restrict membership registration and service use.`,
-    zh: `[必填] 个人信息收集和使用同意\n韩国知识媒体研究院（以下简称"公司"）为顺利提供Korea Scholar服务，按如下方式收集和使用个人信息。\n\n■ 收集项目：姓名、电子邮件地址、密码、所属机构、职位\n■ 收集目的：本人识别、学术信息检索服务提供、客户咨询应对\n■ 第三方提供：原则上不向第三方提供，仅在法律规定的情况下例外提供。\n■ 保留及使用期间：至会员退出为止\n■ 拒绝权利：拒绝时，会员注册及服务使用将受到限制。`,
+    ko: `[필수] 개인정보 수집 및 이용 동의\n(주)한국지식미디어연구원(이하 "회사")은 K-Scholar 서비스의 원활한 제공을 위해 아래와 같이 개인정보를 수집·이용합니다.\n\n■ 수집 항목: 이름, 이메일 주소, 비밀번호, 소속 기관, 직책\n■ 수집 목적: 본인 식별, 학술 정보 검색 서비스 제공, 고객 문의 응대 및 고지사항 전달\n■ 제3자 제공: 원칙적으로 제3자에게 제공하지 않으며, 법령에 의한 경우에만 예외적으로 제공합니다.\n■ 보유 및 이용 기간: 회원 탈퇴 시까지 (관계 법령에 따라 보관이 필요한 경우 해당 기간까지)\n■ 동의 거부 권리: 거부 시 회원가입 및 서비스 이용이 제한됩니다.`,
+    en: `[Required] Consent to Collection and Use of Personal Information\nKorea Knowledge Media Research Institute, Inc. ("Company") collects and uses personal information as follows for the smooth provision of K-Scholar services.\n\n■ Items collected: Name, email address, password, institution, position\n■ Purpose: User identification, academic search service, customer support\n■ Third-party provision: Not provided to third parties in principle, except as required by law.\n■ Retention period: Until membership withdrawal (or as required by applicable law)\n■ Right to refuse: Refusal may restrict membership registration and service use.`,
+    zh: `[必填] 个人信息收集和使用同意\n韩国知识媒体研究院（以下简称"公司"）为顺利提供K-Scholar服务，按如下方式收集和使用个人信息。\n\n■ 收集项目：姓名、电子邮件地址、密码、所属机构、职位\n■ 收集目的：本人识别、学术信息检索服务提供、客户咨询应对\n■ 第三方提供：原则上不向第三方提供，仅在法律规定的情况下例外提供。\n■ 保留及使用期间：至会员退出为止\n■ 拒绝权利：拒绝时，会员注册及服务使用将受到限制。`,
   },
   marketing: {
     ko: `[선택] 마케팅 목적 개인정보 수집 및 이용 동의\n수집된 정보를 활용하여 학술지 편집, 도서 출판, 학회 운영 지원 등 신규 서비스 안내, 이벤트 정보, 맞춤형 광고 전송 및 이메일·문자(SMS/LMS)·카카오톡 알림톡을 통한 광고성 정보를 수신할 수 있습니다.\n\n■ 수집 항목: 이름, 연락처, 이메일, 소속 기관, 직책\n■ 보유 기간: 회원 탈퇴 또는 마케팅 동의 철회 시까지\n■ 동의하지 않더라도 기본 검색 서비스는 이용 가능합니다.`,
@@ -1471,7 +1471,7 @@ function AuthActionPage() {
           <span style={{fontSize:'32px'}}>🔑</span>
         </div>
         <div style={{fontSize:'22px',fontWeight:'700',color:'#1a3a5c',marginBottom:'6px',textAlign:'center'}}>새 비밀번호 설정</div>
-        <div style={{fontSize:'13px',color:'#6b7280',marginBottom:'24px',textAlign:'center'}}>Korea Scholar 비밀번호를 변경합니다.</div>
+        <div style={{fontSize:'13px',color:'#6b7280',marginBottom:'24px',textAlign:'center'}}>K-Scholar 비밀번호를 변경합니다.</div>
         <input type="password" placeholder="새 비밀번호 (6자 이상)" value={password}
           onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleReset()}
