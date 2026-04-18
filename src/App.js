@@ -1502,16 +1502,28 @@ function AuthActionPage() {
 export default function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const authMode = urlParams.get('mode');
+  const initialQuery = urlParams.get('q') || '';
 
-  const [page, setPage] = useState('home');
+  const [page, setPage] = useState(initialQuery ? 'results' : 'home');
   const [siteLang, setSiteLang] = useState(detectLanguage());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
 
-    useEffect(() => {
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || '';
+      if (q) { setSearchQuery(q); setPage('results'); }
+      else { setPage('home'); }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => {
       setUser(u);
       if (u) loadBookmarks(u.uid);
@@ -1553,9 +1565,13 @@ export default function App() {
   };
 
   const handleSearch = (q) => {
-    if (!q) { setPage('home'); return; }
+    if (!q) {
+      window.history.pushState({}, '', '/');
+      setPage('home'); return;
+    }
     if (q === '__library__') { setPage('library'); return; }
     if (q === '__mypage__') { setPage('mypage'); return; }
+    window.history.pushState({}, '', `/?q=${encodeURIComponent(q)}`);
     setSearchQuery(q); setPage('results');
   };
 
