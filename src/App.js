@@ -387,7 +387,7 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
           <span style={{color:'rgba(255,255,255,0.6)', fontWeight:'500'}}>
             (주)한국지식미디어연구원
           </span>
-          {' '}｜ 대표 박재규 ｜ (10896) 경기도 파주시 와석순환로 507, 701호
+          {' '}｜ 관리자 박재규 ｜ (10896) 경기도 파주시 와석순환로 507, 701호
           {' '}｜ E:{' '}
           <a href="mailto:info@kkmii.com"
             style={{color:'rgba(61,214,140,0.7)', textDecoration:'none'}}>
