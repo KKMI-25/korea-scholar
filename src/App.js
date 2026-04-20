@@ -379,14 +379,29 @@ function HomePage({ onSearch, user, onShowAuth, siteLang, onLangChange }) {
         <span className="ks-badge">{t.badgePapers}</span>
         <span className="ks-badge">{t.badgeOA}</span>
       </div>
-      <div style={{position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)',
-        fontSize:'12px', color:'rgba(255,255,255,0.35)', textAlign:'center', whiteSpace:'nowrap'}}>
-        Copyright ⓒ 2025{' '}
-        <a href="https://www.kkmii.com/" target="_blank" rel="noreferrer"
-          style={{color:'rgba(255,255,255,0.5)', textDecoration:'none', fontWeight:'500'}}>
-          Korea Knowledge Media Research Institute CO., LTD.
-        </a>
-        {' '}All Rights Reserved.
+      <div style={{position:'fixed', bottom:0, left:0, right:0,
+        background:'rgba(10,18,40,0.92)', backdropFilter:'blur(8px)',
+        borderTop:'1px solid rgba(255,255,255,0.08)',
+        padding:'10px 20px', textAlign:'center'}}>
+        <div style={{fontSize:'11px', color:'rgba(255,255,255,0.4)', lineHeight:'1.7'}}>
+          <span style={{color:'rgba(255,255,255,0.6)', fontWeight:'500'}}>
+            (주)한국지식미디어연구원
+          </span>
+          {' '}｜ 대표 박재규 ｜ (10896) 경기도 파주시 와석순환로 507, 701호
+          {' '}｜ E:{' '}
+          <a href="mailto:info@kkmii.com"
+            style={{color:'rgba(61,214,140,0.7)', textDecoration:'none'}}>
+            info@kkmii.com
+          </a>
+        </div>
+        <div style={{fontSize:'11px', color:'rgba(255,255,255,0.3)', marginTop:'2px'}}>
+          Copyright ⓒ 2025{' '}
+          <a href="https://www.kkmii.com/" target="_blank" rel="noreferrer"
+            style={{color:'rgba(255,255,255,0.4)', textDecoration:'none'}}>
+            Korea Knowledge Media Research Institute CO., LTD.
+          </a>
+          {' '}All Rights Reserved.
+        </div>
       </div>
     </div>
   );
