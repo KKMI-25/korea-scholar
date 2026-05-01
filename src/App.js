@@ -437,11 +437,12 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
     });
   };
 
-  // 필터 적용
+  // 필터 적용 (국내: KCI 또는 OpenAlex의 한국어 논문, 해외: OpenAlex의 비한국어 논문)
+  const isDomestic = p => p._source === 'kci' || (p._source === 'openalex' && p.language === 'ko');
   const filtered = results.filter(p => {
     if (!p.title) return false;
-    if (sourceFilter === 'kci') return p._source === 'kci';
-    if (sourceFilter === 'openalex') return p._source === 'openalex';
+    if (sourceFilter === 'kci') return isDomestic(p);
+    if (sourceFilter === 'openalex') return p._source === 'openalex' && p.language !== 'ko';
     if (sourceFilter === 'oa') return p.open_access?.is_oa;
     if (sourceFilter === 'free_pdf') {
       if (p._source === 'kci') return p.open_access?.is_oa;
@@ -480,8 +481,8 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
           <div className="ks-filter-row">
             {[
               { key: 'all', label: `${t.filterAll} (${results.filter(p => p.title).length})` },
-              { key: 'kci', label: `${t.filterDomestic} (${results.filter(p => p._source === 'kci').length})` },
-              { key: 'openalex', label: `${t.filterInternational} (${results.filter(p => p._source === 'openalex').length})` },
+              { key: 'kci', label: `${t.filterDomestic} (${results.filter(p => p.title && isDomestic(p)).length})` },
+              { key: 'openalex', label: `${t.filterInternational} (${results.filter(p => p.title && p._source === 'openalex' && p.language !== 'ko').length})` },
               { key: 'oa', label: `${t.filterOA} (${results.filter(p => p.open_access?.is_oa).length})` },
               { key: 'free_pdf', label: `${t.filterFreePDF} (${results.filter(p => p._source === 'kci' ? p.open_access?.is_oa : (p.open_access?.is_oa && p.open_access?.oa_url)).length})` },
             ].map(f => (
