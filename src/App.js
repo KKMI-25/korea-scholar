@@ -437,8 +437,13 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
     });
   };
 
-  // 필터 적용 (국내: KCI 또는 OpenAlex의 한국어 논문, 해외: OpenAlex의 비한국어 논문)
-  const isDomestic = p => p._source === 'kci' || (p._source === 'openalex' && p.language === 'ko');
+  // 필터 적용 (국내: KCI 또는 OpenAlex의 한국어 논문/한국 학술지 논문, 해외: 나머지 OpenAlex 논문)
+  const isDomestic = p =>
+    p._source === 'kci' ||
+    (p._source === 'openalex' && (
+      p.language === 'ko' ||                                      // 한국어로 쓰인 논문
+      p.primary_location?.source?.country_code === 'KR'          // 한국 학술지 게재 논문
+    ));
   const filtered = results.filter(p => {
     if (!p.title) return false;
     if (sourceFilter === 'kci') return isDomestic(p);
