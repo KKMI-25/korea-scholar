@@ -548,7 +548,12 @@ function DetailPage({ paper, onBack, onSearch, onShowAuth, user, bookmarks, onBo
     <div>
       <Header user={user} onSearch={onSearch} onShowAuth={onShowAuth} />
       <div className="ks-results">
-        <button className="ks-chip" onClick={onBack} style={{marginBottom:'20px'}}>{(i18n[siteLang]||i18n.en).backToResults}</button>
+        <button onClick={onBack} style={{
+          marginBottom:'20px', padding:'8px 18px',
+          background:'#3dd68c', color:'#fff', fontWeight:'600',
+          border:'none', borderRadius:'8px', cursor:'pointer',
+          fontSize:'14px', display:'inline-flex', alignItems:'center', gap:'4px'
+        }}>{(i18n[siteLang]||i18n.en).backToResults}</button>
         <div className="ks-card" style={{cursor:'default'}}>
           <div className="ks-card-title" style={{fontSize:'20px', marginBottom:'8px'}}>{title}</div>
           {titleEn && title !== titleEn && (
