@@ -94,9 +94,18 @@ function CitationButton({ paper }) {
   );
 }
 
+// ==================== OpenAlex 정렬 맵 ====================
+const OA_SORT_MAP = {
+  newest:   'publication_date:desc',
+  oldest:   'publication_date:asc',
+  cited:    'cited_by_count:desc',
+  oa_first: 'is_oa:desc,relevance_score:desc',
+};
+
 // ==================== OpenAlex 검색 ====================
-async function searchOpenAlex(keyword, page = 1) {
-  const res = await fetch(`https://api.openalex.org/works?search=${encodeURIComponent(keyword)}&per_page=10&page=${page}&mailto=kkmi.hello@gmail.com`);
+async function searchOpenAlex(keyword, page = 1, sort = '') {
+  const sortParam = sort ? `&sort=${sort}` : '';
+  const res = await fetch(`https://api.openalex.org/works?search=${encodeURIComponent(keyword)}&per_page=10&page=${page}${sortParam}&mailto=kkmi.hello@gmail.com`);
   return await res.json();
 }
 
@@ -189,9 +198,10 @@ async function searchKCI(keyword, page = 1) {
 }
 
 // ==================== 통합 검색 ====================
-async function searchAll(keyword, page = 1) {
+async function searchAll(keyword, page = 1, sort = '') {
+  const oaSort = OA_SORT_MAP[sort] || '';
   const [oaData, kciData] = await Promise.allSettled([
-    searchOpenAlex(keyword, page),
+    searchOpenAlex(keyword, page, oaSort),
     searchKCI(keyword, page),
   ]);
 
@@ -416,21 +426,21 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
   const [oaTotal, setOaTotal] = useState(0);
   const [kciTotal, setKciTotal] = useState(0);
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('relevance'); // 'relevance', 'newest', 'oldest', 'cited'
+  const [sortBy, setSortBy] = useState('relevance'); // 'relevance', 'oa_first', 'newest', 'oldest', 'cited'
 
   useEffect(() => {
     setLoading(true); setPage(1);
-    searchAll(query, 1).then(data => {
+    searchAll(query, 1, sortBy).then(data => {
       setResults(data.results || []);
       setOaTotal(data.oaTotal || 0);
       setKciTotal(data.kciTotal || 0);
       setLoading(false);
     });
-  }, [query]);
+  }, [query, sortBy]); // sortBy 변경 시 API 재호출 (OpenAlex 정렬 반영)
 
   const loadPage = (p) => {
     setLoading(true); setPage(p);
-    searchAll(query, p).then(data => {
+    searchAll(query, p, sortBy).then(data => {
       setResults(data.results || []);
       setLoading(false);
       window.scrollTo(0, 0);
@@ -456,11 +466,16 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
     return true;
   });
 
-  // 정렬 적용
+  // 정렬 적용 (API 정렬 외 클라이언트 보조 정렬)
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === 'newest') return (parseInt(b.publication_year) || 0) - (parseInt(a.publication_year) || 0);
     if (sortBy === 'oldest') return (parseInt(a.publication_year) || 0) - (parseInt(b.publication_year) || 0);
     if (sortBy === 'cited') return (b.cited_by_count || 0) - (a.cited_by_count || 0);
+    if (sortBy === 'oa_first') {
+      const hasPdfA = a.open_access?.is_oa && (a._source === 'kci' || a.open_access?.oa_url) ? 1 : 0;
+      const hasPdfB = b.open_access?.is_oa && (b._source === 'kci' || b.open_access?.oa_url) ? 1 : 0;
+      return hasPdfB - hasPdfA;
+    }
     return 0; // relevance = 기본 순서 유지
   });
 
@@ -478,6 +493,7 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               style={{padding:'6px 12px', borderRadius:'8px', border:'1px solid #d1d5db', fontSize:'13px', color:'#374151', cursor:'pointer', background:'#fff'}}>
               <option value="relevance">{t.sortRelevance}</option>
+              <option value="oa_first">🆓 {t.sortOA || '무료PDF 우선'}</option>
               <option value="newest">{t.sortNewest}</option>
               <option value="oldest">{t.sortOldest}</option>
               <option value="cited">{t.sortCited}</option>
@@ -634,7 +650,7 @@ const i18n = {
     resultsFound: '건 검색됨', searching: '🔍 논문을 검색하는 중...',
     filterAll: '전체', filterDomestic: '국내 논문', filterInternational: '해외 논문',
     filterOA: '오픈액세스', filterFreePDF: '🆓 무료PDF',
-    sortRelevance: '관련도순', sortNewest: '최신순', sortOldest: '오래된순', sortCited: '피인용순',
+    sortRelevance: '관련도순', sortOA: '무료PDF 우선', sortNewest: '최신순', sortOldest: '오래된순', sortCited: '피인용순',
     prevPage: '← 이전', nextPage: '다음 →', pageUnit: '페이지',
     noResults: '해당 필터의 검색 결과가 없습니다.',
     openAccess: '오픈액세스', korean: '한국어',
