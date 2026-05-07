@@ -303,11 +303,9 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
 
       <div className="ks-card-footer">
         <div className="ks-tags">
-          {isOA
-            ? <span className="ks-tag ks-tag-green">{t.openAccess}</span>
-            : <span className="ks-tag" style={{background:'#fee2e2', color:'#dc2626', border:'1px solid #fecaca'}}>유료</span>
-          }
+          {isOA && <span className="ks-tag ks-tag-green">{t.openAccess}</span>}
           {paper.language==='ko' && <span className="ks-tag ks-tag-blue">{t.korean}</span>}
+          {isKCI && !isOA && <span className="ks-tag" style={{background:'#f3f4f6', color:'#6b7280', border:'1px solid #e5e7eb', fontSize:'11px'}}>원문확인필요</span>}
         </div>
         <div style={{display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'flex-end'}}>
           <CitationButton paper={paper} />
