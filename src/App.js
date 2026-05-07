@@ -99,7 +99,7 @@ const OA_SORT_MAP = {
   newest:   'publication_date:desc',
   oldest:   'publication_date:asc',
   cited:    'cited_by_count:desc',
-  oa_first: 'is_oa:desc,relevance_score:desc',
+  oa_first: 'is_oa:desc',  // relevance_score는 OpenAlex 미지원 파라미터
 };
 
 // ==================== OpenAlex 검색 ====================
@@ -303,7 +303,10 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
 
       <div className="ks-card-footer">
         <div className="ks-tags">
-          {isOA && <span className="ks-tag ks-tag-green">{t.openAccess}</span>}
+          {isOA
+            ? <span className="ks-tag ks-tag-green">{t.openAccess}</span>
+            : <span className="ks-tag" style={{background:'#fee2e2', color:'#dc2626', border:'1px solid #fecaca'}}>유료</span>
+          }
           {paper.language==='ko' && <span className="ks-tag ks-tag-blue">{t.korean}</span>}
         </div>
         <div style={{display:'flex', gap:'6px', flexWrap:'wrap', justifyContent:'flex-end'}}>
@@ -313,11 +316,20 @@ function PaperCard({ paper, onPaperClick, user, bookmarks, onBookmark, onShowAut
             onClick={e => { e.stopPropagation(); user ? onBookmark(paper) : onShowAuth(); }}>
             {isBookmarked ? t.saved : t.save}
           </button>
-          {isKCI ? (
-            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>{t.viewOriginal}</button>
+          {isKCI && isOA ? (
+            // KCI 무료 논문 → 초록색 버튼
+            <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>{'📄 무료 원문 ↗'}</button>
+          ) : isKCI && !isOA ? (
+            // KCI 유료 논문 → 회색 버튼 + 구글 PDF 보조
+            <>
+              <button className="ks-pdf-btn" style={{borderColor:'#d1d5db', color:'#6b7280'}} onClick={e => { e.stopPropagation(); window.open(paper._kci?.paperUrl || `https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=${paper._kci?.articleId}`, '_blank'); }}>{t.viewOriginal}</button>
+              <button className="ks-pdf-btn ks-pdf-google" onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank'); }}>{'구글 PDF ↗'}</button>
+            </>
           ) : isOA && pdfUrl !== '#' ? (
+            // OpenAlex 무료 논문 → 직접 PDF 링크
             <button className="ks-pdf-btn ks-pdf-oa" onClick={e => { e.stopPropagation(); window.open(pdfUrl, '_blank'); }}>{t.freePDF}</button>
           ) : (
+            // 유료 또는 PDF 없음 → 구글 검색
             <button className="ks-pdf-btn ks-pdf-google" onClick={e => { e.stopPropagation(); window.open(`https://www.google.com/search?q=${encodeURIComponent(title)}+filetype:pdf`, '_blank'); }}>{t.googleOriginal}</button>
           )}
         </div>
@@ -431,7 +443,7 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
 
   useEffect(() => {
     setLoading(true); setPage(1);
-    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf';
+    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf' || sortBy === 'oa_first';
     searchAll(query, 1, sortBy, oaOnly).then(data => {
       setResults(data.results || []);
       setOaTotal(data.oaTotal || 0);
@@ -442,7 +454,7 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
 
   const loadPage = (p) => {
     setLoading(true); setPage(p);
-    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf';
+    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf' || sortBy === 'oa_first';
     searchAll(query, p, sortBy, oaOnly).then(data => {
       setResults(data.results || []);
       setLoading(false);
