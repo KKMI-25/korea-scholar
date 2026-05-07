@@ -103,9 +103,10 @@ const OA_SORT_MAP = {
 };
 
 // ==================== OpenAlex 검색 ====================
-async function searchOpenAlex(keyword, page = 1, sort = '') {
+async function searchOpenAlex(keyword, page = 1, sort = '', oaOnly = false) {
   const sortParam = sort ? `&sort=${sort}` : '';
-  const res = await fetch(`https://api.openalex.org/works?search=${encodeURIComponent(keyword)}&per_page=10&page=${page}${sortParam}&mailto=kkmi.hello@gmail.com`);
+  const filterParam = oaOnly ? '&filter=is_oa:true' : '';
+  const res = await fetch(`https://api.openalex.org/works?search=${encodeURIComponent(keyword)}&per_page=25&page=${page}${sortParam}${filterParam}&mailto=kkmi.hello@gmail.com`);
   return await res.json();
 }
 
@@ -198,10 +199,10 @@ async function searchKCI(keyword, page = 1) {
 }
 
 // ==================== 통합 검색 ====================
-async function searchAll(keyword, page = 1, sort = '') {
+async function searchAll(keyword, page = 1, sort = '', oaOnly = false) {
   const oaSort = OA_SORT_MAP[sort] || '';
   const [oaData, kciData] = await Promise.allSettled([
-    searchOpenAlex(keyword, page, oaSort),
+    searchOpenAlex(keyword, page, oaSort, oaOnly),
     searchKCI(keyword, page),
   ]);
 
@@ -430,17 +431,19 @@ function ResultsPage({ query, onPaperClick, onSearch, onShowAuth, user, bookmark
 
   useEffect(() => {
     setLoading(true); setPage(1);
-    searchAll(query, 1, sortBy).then(data => {
+    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf';
+    searchAll(query, 1, sortBy, oaOnly).then(data => {
       setResults(data.results || []);
       setOaTotal(data.oaTotal || 0);
       setKciTotal(data.kciTotal || 0);
       setLoading(false);
     });
-  }, [query, sortBy]); // sortBy 변경 시 API 재호출 (OpenAlex 정렬 반영)
+  }, [query, sortBy, sourceFilter]); // 필터/정렬 변경 시 API 재호출
 
   const loadPage = (p) => {
     setLoading(true); setPage(p);
-    searchAll(query, p, sortBy).then(data => {
+    const oaOnly = sourceFilter === 'oa' || sourceFilter === 'free_pdf';
+    searchAll(query, p, sortBy, oaOnly).then(data => {
       setResults(data.results || []);
       setLoading(false);
       window.scrollTo(0, 0);
